@@ -1,7 +1,16 @@
 micronaut:
   application:
     name: telemetryServer
+  router:
+    static-resources:
+      default:
+        enabled: true
+        #paths: "classpath:public"
+        paths: "file:./src/main/resources/public"
 netty:
   default:
     allocator:
       max-order: 3
+log:
+  level:
+    org.faforever: DEBUG

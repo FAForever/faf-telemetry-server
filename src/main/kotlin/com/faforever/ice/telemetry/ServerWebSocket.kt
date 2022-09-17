@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory
 import java.lang.IllegalStateException
 
 interface MessageHandler {
+    fun onOpen(gameId: Int, session: WebSocketSession)
+    fun onClose(session: WebSocketSession)
     fun handle(message: String, gameId: Int, session: WebSocketSession)
 }
 
@@ -40,15 +42,24 @@ class ServerWebSocket {
             CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
         )
 
-        sessionHandlers[session] = messageHandlers[version] ?: return session.close(
+        val messageHandler = messageHandlers[version] ?: return session.close(
             CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Unsupported protocol version")
         ).also { logger.warn("User tried to connect to unknown protocol version $version") }
+
+        sessionHandlers[session] = messageHandler
+        messageHandler.onOpen(gameId, session)
     }
 
     @OnClose
     fun onClose(version: String, gameId: String, session: WebSocketSession) {
         logger.info("Websocket closed session id $session.id [protocol=v$version,gameId=$gameId]")
 
+        val messageHandler = sessionHandlers[session] ?: run {
+            logger.warn("Session $session.id has no message handler attached (closing any way)")
+            return
+        }
+
+        messageHandler.onClose(session)
         sessionHandlers.remove(session)
     }
 
@@ -57,7 +68,7 @@ class ServerWebSocket {
         logger.info("onMessage [protocol=v$version,gameId=$gameId]: $message")
 
         val messageHandler = sessionHandlers[session]
-            ?: throw IllegalStateException("No session handler for session $session.id")
+            ?: throw IllegalStateException("No message handler for session $session.id")
         messageHandler.handle(message, gameId, session)
     }
 }
