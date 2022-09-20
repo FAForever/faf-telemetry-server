@@ -1,5 +1,6 @@
 package com.faforever.ice.telemetry.protocol.v1
 
+import com.faforever.ice.telemetry.ProtocolVersion
 import com.faforever.ice.telemetry.domain.PlayerId
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
@@ -9,6 +10,7 @@ import java.util.UUID
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "messageType")
 @JsonSubTypes(
     Type(value = RegisterAsPeer::class, name = "registerAsPeer"),
+    Type(value = RegisterAsUi::class, name = "registerAsUi"),
     Type(value = ConnectToPeer::class, name = "connectToPeer"),
     Type(value = DisconnectFromPeer::class, name = "disconnectFromPeer"),
     Type(value = PeerConnectivityUpdate::class, name = "peerConnectivityUpdate"),
@@ -43,8 +45,15 @@ data class ErrorResponse(
     val referredMessage: UUID,
     val errorCode: String,
     override val messageId: UUID = UUID.randomUUID(),
-) :
-    OutgoingMessageV1
+) : OutgoingMessageV1
+
+data class AdapterMessage(
+    val version: String,
+    val protocolVersion: Int,
+    val playerId: Int,
+    val playerName: String,
+    override val messageId: UUID = UUID.randomUUID(),
+) : OutgoingMessageV1
 
 data class GameUpdatedMessage(
     val gameId: Int,
@@ -52,7 +61,7 @@ data class GameUpdatedMessage(
     val state: String,
     val participants: Map<Int, Peer>,
     override val messageId: UUID = UUID.randomUUID(),
-): OutgoingMessageV1 {
+) : OutgoingMessageV1 {
     data class Peer(
         val playerId: PlayerId,
         val playerName: String,
@@ -68,7 +77,13 @@ data class RegisterAsPeer(
     val adapterVersion: String,
     val gameId: Int,
     val playerId: Int,
-    val userName: String
+    val userName: String,
+) : IncomingMessageV1
+
+data class RegisterAsUi(
+    override val messageId: UUID,
+    val gameId: Int,
+    val playerId: Int,
 ) : IncomingMessageV1
 
 data class ConnectToPeer(

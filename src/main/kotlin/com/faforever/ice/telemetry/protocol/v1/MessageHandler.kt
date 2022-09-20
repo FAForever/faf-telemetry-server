@@ -1,70 +1,129 @@
 package com.faforever.ice.telemetry.protocol.v1
 
 import com.faforever.ice.telemetry.MessageHandler
-import com.faforever.ice.telemetry.ServerWebSocket
-import com.faforever.ice.telemetry.domain.DomainEvent
+import com.faforever.ice.telemetry.ProtocolVersion
+import com.faforever.ice.telemetry.SessionId
+import com.faforever.ice.telemetry.domain.ClientRequestCurrentState
+import com.faforever.ice.telemetry.domain.ClientRequestedUnknownGame
 import com.faforever.ice.telemetry.domain.GameId
 import com.faforever.ice.telemetry.domain.GameUpdated
 import com.faforever.ice.telemetry.domain.PeerConnected
 import com.faforever.ice.telemetry.domain.PlayerId
+import com.faforever.ice.telemetry.domain.UiConnected
+import com.faforever.ice.telemetry.getSessionId
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.micronaut.context.annotation.Context
 import io.micronaut.context.event.ApplicationEventPublisher
+import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.websocket.WebSocketSession
 import jakarta.inject.Singleton
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 
-@Context
 @Singleton
 class MessageHandler(
     private val objectMapper: ObjectMapper,
-    private val serverWebSocket: ServerWebSocket,
     private val applicationEventPublisher: ApplicationEventPublisher<Any>
 ) : MessageHandler {
     private val logger = LoggerFactory.getLogger(javaClass)
-    private val sessionStates = mutableMapOf<WebSocketSession, SessionState>()
+    private val gameSessions: MutableMap<GameId, MutableList<WebSocketSession>> = ConcurrentHashMap()
+    private val sessionsById: MutableMap<SessionId, WebSocketSession> = ConcurrentHashMap()
 
-    init {
-        serverWebSocket.registerMessageHandler(1, this)
+    override fun onOpen(gameId: GameId, session: WebSocketSession) {
+        sessionsById[SessionId(session.id)] = session
+        gameSessions.getOrPut(gameId) { mutableListOf() }.add(session)
     }
 
-    override fun onOpen(gameId: Int, session: WebSocketSession) {
-        sessionStates[session] = SessionState.Connected(gameId)
+    override fun onClose(gameId: GameId, session: WebSocketSession) {
+        sessionsById.remove(session.getSessionId())
+
+        val currentGameSessions = gameSessions[gameId]
+            ?: throw IllegalStateException("Game id $gameId not in game sessions")
+        currentGameSessions.remove(session)
+        if (currentGameSessions.isEmpty()) {
+            gameSessions.remove(gameId)
+        }
     }
 
-    override fun onClose(session: WebSocketSession) {
-        sessionStates.remove(session)
-    }
-
-    override fun handle(message: String, gameId: Int, session: WebSocketSession) {
+    override fun handle(message: String, session: WebSocketSession) {
         val message = parseMessageOrRespondError(message, session) ?: return
 
         when (message) {
             is RegisterAsPeer -> {
                 applicationEventPublisher.publishEventAsync(
                     PeerConnected(
+                        GameId(message.gameId),
                         message.adapterVersion,
+                        ProtocolVersion(1),
+                        PlayerId(message.playerId),
+                        message.userName,
+                        session.getSessionId(),
+                    )
+                )
+            }
+
+            is RegisterAsUi -> {
+                applicationEventPublisher.publishEventAsync(
+                    UiConnected(
                         GameId(message.gameId),
                         PlayerId(message.playerId),
-                        message.userName
-                    ) { event -> handle(event, session) }
+                        session.getSessionId(),
+                    )
                 )
             }
         }
     }
 
-    private fun handle(event: DomainEvent, session: WebSocketSession) {
-        when (event) {
-            is GameUpdated -> session.sendV1(
+    @EventListener
+    fun handle(event: GameUpdated) {
+        val sessions = gameSessions[event.game.id] ?: emptyList()
+
+        sessions.forEach {
+            it.sendV1(
                 GameUpdatedMessage(
-                    event.game.gameId.id,
+                    event.game.id.id,
                     event.game.host.id.id,
                     "someState",
                     mapOf()
                 )
             )
         }
+    }
+
+    @EventListener
+    fun handle(event: ClientRequestedUnknownGame) {
+        sessionsById[event.sessionId]?.sendV1(
+            GeneralError(
+                ErrorCode.GAME_UNKNOWN,
+                null,
+                mapOf("gameId" to event.gameId)
+            )
+        )
+    }
+
+    @EventListener
+    fun handle(event: ClientRequestCurrentState) {
+        val session = sessionsById[event.sessionId] ?: return
+
+        if (event.adapter != null) {
+            session.sendV1(
+                AdapterMessage(
+                    event.adapter.version,
+                    event.adapter.protocolVersion.id,
+                    event.adapter.playerId.id,
+                    event.adapter.playerName,
+                )
+            )
+        }
+
+        session.sendV1(
+            GameUpdatedMessage(
+                event.game.id.id,
+                event.game.host.id.id,
+                "someState",
+                mapOf()
+            )
+        )
     }
 
     private fun parseMessageOrRespondError(message: String, session: WebSocketSession): IncomingMessageV1? =
@@ -77,16 +136,14 @@ class MessageHandler(
             null
         }
 
-    private
-
-    fun WebSocketSession.sendV1(message: OutgoingMessageV1) {
+    private fun WebSocketSession.sendV1(message: OutgoingMessageV1) {
         val message = objectMapper.writeValueAsString(message)
         logger.trace("Sending message: $message")
 
         sendSync(message)
     }
 
-    fun tryParseMessageId(message: String): String? = try {
+    private fun tryParseMessageId(message: String): String? = try {
         objectMapper.readValue(message, OnlyIdMessage::class.java).messageId
     } catch (e: Exception) {
         null

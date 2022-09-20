@@ -1,5 +1,6 @@
 package com.faforever.ice.telemetry
 
+import com.faforever.ice.telemetry.domain.GameId
 import io.micronaut.websocket.CloseReason
 import io.micronaut.websocket.WebSocketSession
 import io.micronaut.websocket.annotation.OnClose
@@ -10,41 +11,50 @@ import org.slf4j.LoggerFactory
 import java.lang.IllegalStateException
 
 interface MessageHandler {
-    fun onOpen(gameId: Int, session: WebSocketSession)
-    fun onClose(session: WebSocketSession)
-    fun handle(message: String, gameId: Int, session: WebSocketSession)
+    fun onOpen(gameId: GameId, session: WebSocketSession)
+    fun onClose(gameId: GameId, session: WebSocketSession)
+    fun handle(message: String, session: WebSocketSession)
 }
 
+@JvmInline
+value class SessionId(val id: String)
+
+@JvmInline
+value class ProtocolVersion(val id: Int)
+
 @ServerWebSocket("/ws/v{version}/game/{gameId}")
-class ServerWebSocket {
-    private val logger = LoggerFactory.getLogger(javaClass)
+class ServerWebSocket(
+    val messageHandlerV1: com.faforever.ice.telemetry.protocol.v1.MessageHandler
+) {
+    private val log = LoggerFactory.getLogger(javaClass)
+
 
     /**
      * For each protocol version we have a dedicated message handler.
      * Message handlers need to register themselves.
      */
-    private val messageHandlers = mutableMapOf<Int, MessageHandler>()
+    private val messageHandlers = mutableMapOf<ProtocolVersion, MessageHandler>()
     private val sessionHandlers = mutableMapOf<WebSocketSession, MessageHandler>()
 
-    fun registerMessageHandler(protocolVersion: Int, handler: MessageHandler) {
-        messageHandlers[protocolVersion] = handler
+    init {
+        messageHandlers[ProtocolVersion(1)] = messageHandlerV1
     }
 
     @OnOpen
     fun onOpen(version: String, gameId: String, session: WebSocketSession) {
-        logger.info("Websocket opened session id $session.id [protocol=v$version,gameId=$gameId]")
+        log.info("Websocket opened session id $session.id [protocol=v$version,gameId=$gameId]")
 
-        val version = version.toIntOrNull() ?: return session.close(
+        val version = (version.toIntOrNull() ?: return session.close(
             CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid protocol version")
-        )
+        )).let { ProtocolVersion(it) }
 
-        val gameId = gameId.toIntOrNull() ?: return session.close(
+        val gameId = (gameId.toIntOrNull() ?: return session.close(
             CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
-        )
+        )).let { GameId(it) }
 
         val messageHandler = messageHandlers[version] ?: return session.close(
             CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Unsupported protocol version")
-        ).also { logger.warn("User tried to connect to unknown protocol version $version") }
+        ).also { log.warn("User tried to connect to unknown protocol version $version") }
 
         sessionHandlers[session] = messageHandler
         messageHandler.onOpen(gameId, session)
@@ -52,23 +62,36 @@ class ServerWebSocket {
 
     @OnClose
     fun onClose(version: String, gameId: String, session: WebSocketSession) {
-        logger.info("Websocket closed session id $session.id [protocol=v$version,gameId=$gameId]")
+        log.info("Websocket closed session id $session.id [protocol=v$version,gameId=$gameId]")
 
-        val messageHandler = sessionHandlers[session] ?: run {
-            logger.warn("Session $session.id has no message handler attached (closing any way)")
+
+        val version = version.toIntOrNull() ?: run {
+            log.error("Unparseable gameId $gameId")
             return
         }
 
-        messageHandler.onClose(session)
+        val gameId = (gameId.toIntOrNull() ?: return session.close(
+            CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
+        )).let { GameId(it) }
+
+
+        val messageHandler = sessionHandlers[session] ?: run {
+            log.warn("Session $session.id has no message handler attached (closing any way)")
+            return
+        }
+
+        messageHandler.onClose(gameId, session)
         sessionHandlers.remove(session)
     }
 
     @OnMessage
-    fun onMessage(version: Int, gameId: Int, message: String, session: WebSocketSession) {
-        logger.info("onMessage [protocol=v$version,gameId=$gameId]: $message")
+    fun onMessage(message: String, session: WebSocketSession) {
+        log.info("onMessage: $message")
 
         val messageHandler = sessionHandlers[session]
             ?: throw IllegalStateException("No message handler for session $session.id")
-        messageHandler.handle(message, gameId, session)
+        messageHandler.handle(message, session)
     }
 }
+
+fun WebSocketSession.getSessionId() = SessionId(id)

@@ -1,5 +1,7 @@
 package com.faforever.ice.telemetry.protocol.v1
 
+import com.faforever.ice.telemetry.domain.GameId
+
 data class PeerContext(
         val gameId: Int,
         val userId: Int,
@@ -7,7 +9,7 @@ data class PeerContext(
 )
 
 sealed interface SessionState {
-    data class Connected(val gameId: Int): SessionState
+    data class Connected(val gameId: GameId): SessionState
     data class AssignedToGame(val peerContext: PeerContext): SessionState
     object Disconnected: SessionState
 }
