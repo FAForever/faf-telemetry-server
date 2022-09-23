@@ -102,6 +102,10 @@ sl-badge sl-icon {
     margin-right: 1ch;
 }
 
+sl-badge sl-spinner {
+    margin-left: 1ch;
+}
+
 sl-details::part(summary) {
     font-size: large;
     font-weight: bold;
@@ -109,4 +113,22 @@ sl-details::part(summary) {
 
 sl-details::part(base) {
     margin-bottom: 1rem;
+}
+
+sl-badge sl-spinner {
+    --indicator-color: white;
+}
+
+sl-badge faf-var {
+    margin-left: 0.5ch;
+}
+
+.loading faf-var {
+    display: none;
+}
+.loaded faf-var {
+    display: inline;
+}
+.loaded sl-spinner {
+    display: none;
 }

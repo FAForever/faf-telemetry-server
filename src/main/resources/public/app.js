@@ -1,121 +1,45 @@
-const timeFormatter = new Intl.RelativeTimeFormat('en', {style: 'long', numeric: 'auto'});
-const coturnData = {
-    columns: [{
-        key: "region",
-        text: "Region",
-    }, {
-        key: "host",
-        text: "Host",
-    }, {
-        key: "port",
-        text: "Port",
-        textAlign: "center",
-    }, {
-        key: "averageRtt",
-        text: "Average RTT",
-        textAlign: "right",
-        formatData: (milliseconds) => {
-            return milliseconds == null ? "n/a" : milliseconds + ' ms';
-        },
-    }],
-    rows: [{
-        region: "Europe",
-        host: "coturn-eu-1.supcomhub.org",
-        port: 3478
-    }, {
-        region: "Europe",
-        host: "faforever.com",
-        port: 3478
-    },]
+import { SlAlert } from "https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.0.0-beta.83/dist/shoelace.js"
+
+function setVariable(id, value) {
+    document.getElementById(id).innerText = value
 }
 
-const coturnTable = document.getElementById('coturn-table');
-coturnTable.columns = coturnData.columns;
-coturnTable.rows = coturnData.rows;
+// Always escape HTML for text arguments!
+function escapeHtml(html) {
+    const div = document.createElement('div');
+    div.textContent = html;
+    return div.innerHTML;
+}
 
-const peerData = {
-    columns: [{
-        key: "id",
-        text: "Player ID",
-        textAlign: "center",
-    }, {
-        key: "login",
-        text: "Player Name",
-    }, {
-        key: "connected",
-        text: "Connected",
-        "variant": "icon",
-        textAlign: "center",
-    }, {
-        key: "localOffer",
-        text: "Local Offer",
-        "variant": "icon",
-        textAlign: "center",
-    }, {
-        key: "state",
-        text: "State",
-    }, {
-        key: "averageRtt",
-        text: "Average RTT",
-        textAlign: "right",
-        formatData: (milliseconds) => {
-            return milliseconds == null ? "n/a" : milliseconds + ' ms';
-        }
-    }, {
-        key: "lastReceived",
-        text: "Last Received",
-        textAlign: "center",
-        formatData: (milliseconds) => {
-            if (milliseconds == null) {
-                return "n/a";
-            }
-            return timeFormatter.format(-Math.floor(milliseconds / 100.0) / 10, 'seconds');
-        }
-    }, {
-        key: "localCandidate",
-        text: "Local Candidate",
-        textAlign: "center",
-    }, {
-        key: "remoteCandidate",
-        text: "Remote Candidate",
-        textAlign: "center",
-    }],
-    rows: [{
-        id: "14",
-        login: "Brutus5000",
-        connected: {"name": "check"},
-        localOffer: {"name": "check"},
-        state: "completed",
-        averageRtt: 31,
-        lastReceived: 1553,
-        localCandidate: "prflx",
-        remoteCandidate: "host",
-    }, {
-        id: "2345",
-        login: "Askaholic",
-        connected: {"name": "wifi-unavailable"},
-        localOffer: {"name": "check"},
-        state: "awaitingCandidates",
-        averageRtt: null,
-        lastReceived: 15253,
-        localCandidate: "stun",
-        remoteCandidate: "prflx",
-    }, {
-        id: "3456",
-        login: "Giebmasse",
-        connected: {"name": "check"},
-        localOffer: {"name": "check"},
-        state: "connected",
-        averageRtt: 67,
-        lastReceived: 753,
-        localCandidate: "local",
-        remoteCandidate: "host",
-    }]
-};
+// Custom function to emit toast notifications
+function notify(message, variant = 'primary', icon = 'info-circle', duration = 3000) {
+    const alert = Object.assign(document.createElement('sl-alert'), {
+        variant,
+        closable: true,
+        duration: duration,
+        innerHTML: `
+        <sl-icon name="${icon}" slot="icon"></sl-icon>
+        ${escapeHtml(message)}
+      `
+    });
 
-const peerTable = document.getElementById('connections-table');
-peerTable.columns = peerData.columns;
-peerTable.rows = peerData.rows;
+    document.body.append(alert);
+    return alert.toast();
+}
+// Custom function to emit toast notifications
+function peristentError(message) {
+    const alert = Object.assign(document.createElement('sl-alert'), {
+        variant: 'danger',
+        closable: false,
+        innerHTML: `
+        <sl-icon name="exclamation-octagon" slot="icon"></sl-icon>
+        ${escapeHtml(message)}
+      `
+    });
+
+    document.body.append(alert);
+    return alert.toast();
+}
 
 const params = new Proxy(new URLSearchParams(window.location.search), {
     get: (searchParams, prop) => searchParams.get(prop),
@@ -134,8 +58,7 @@ if (isValid) {
 
         telemetrySocket.send(JSON.stringify({
             messageId: crypto.randomUUID(),
-            messageType: "registerAsUi",
-            gameId: gameId,
+            messageType: "RegisterAsUi",
             playerId: playerId,
         }));
     }
@@ -144,8 +67,17 @@ if (isValid) {
         const message = JSON.parse(event.data)
 
         switch (message.messageType) {
-            case "error":
+            case "Error":
                 console.log(`Error on Websocket: ${JSON.stringify(message)}`);
+                return;
+            case "AdapterMessage":
+                console.log(`AdapterMessage: ${JSON.stringify(message)}`);
+                document.body.classList.remove("loading")
+                document.body.classList.add("loaded")
+                setVariable("adapterVersion", message.version)
+                setVariable("adapterProtocol", 'v'+message.protocolVersion)
+                setVariable("playerId", message.playerId)
+                setVariable("playerName", message.playerName)
                 return;
             default:
                 console.log(`Unmapped message on Websocket: ${JSON.stringify(message)}`);
@@ -155,5 +87,5 @@ if (isValid) {
 
     };
 } else {
-
+    peristentError("No game id or player id specified!");
 }

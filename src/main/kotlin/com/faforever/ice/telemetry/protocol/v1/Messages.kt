@@ -9,12 +9,12 @@ import java.util.UUID
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "messageType")
 @JsonSubTypes(
-    Type(value = RegisterAsPeer::class, name = "registerAsPeer"),
-    Type(value = RegisterAsUi::class, name = "registerAsUi"),
-    Type(value = ConnectToPeer::class, name = "connectToPeer"),
-    Type(value = DisconnectFromPeer::class, name = "disconnectFromPeer"),
-    Type(value = PeerConnectivityUpdate::class, name = "peerConnectivityUpdate"),
-    Type(value = GameStateChanged::class, name = "gameStateChanged"),
+    Type(value = RegisterAsPeer::class, name = "RegisterAsPeer"),
+    Type(value = RegisterAsUi::class, name = "RegisterAsUi"),
+    Type(value = ConnectToPeer::class, name = "ConnectToPeer"),
+    Type(value = DisconnectFromPeer::class, name = "DisconnectFromPeer"),
+    Type(value = PeerConnectivityUpdate::class, name = "PeerConnectivityUpdate"),
+    Type(value = GameStateChanged::class, name = "GameStateChanged"),
 )
 interface IncomingMessageV1 {
     val messageId: UUID
@@ -22,8 +22,8 @@ interface IncomingMessageV1 {
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "messageType")
 @JsonSubTypes(
-    Type(value = GeneralError::class, name = "error"),
-    Type(value = ErrorResponse::class, name = "error"),
+    Type(value = GeneralError::class, name = "Error"),
+    Type(value = ErrorResponse::class, name = "Error"),
 )
 interface OutgoingMessageV1 {
     val messageId: UUID
@@ -68,6 +68,19 @@ data class GameUpdatedMessage(
     )
 }
 
+data class CoturnServer(
+    val region: String,
+    val host: String,
+    val port: Int,
+    val averageRTT: Double
+)
+data class UpdateCoturnList(
+    override val messageId: UUID,
+    val playerId: PlayerId,
+    val connectedHost: String,
+    val knownServers: List<CoturnServer>
+) : IncomingMessageV1
+
 //data class HostGame(val messageId: UUID, val gameId:)
 //data class JoinGame(val messageId: UUID, val userId: Int, val userName: String) : IncomingMessageV1
 
@@ -75,14 +88,12 @@ data class GameUpdatedMessage(
 data class RegisterAsPeer(
     override val messageId: UUID,
     val adapterVersion: String,
-    val gameId: Int,
     val playerId: Int,
     val userName: String,
 ) : IncomingMessageV1
 
 data class RegisterAsUi(
     override val messageId: UUID,
-    val gameId: Int,
     val playerId: Int,
 ) : IncomingMessageV1
 
@@ -107,3 +118,5 @@ data class GameStateChanged(
     override val messageId: UUID,
     val newState: String,
 ) : IncomingMessageV1
+
+

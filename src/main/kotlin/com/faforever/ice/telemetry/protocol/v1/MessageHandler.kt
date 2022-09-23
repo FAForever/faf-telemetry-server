@@ -5,6 +5,8 @@ import com.faforever.ice.telemetry.ProtocolVersion
 import com.faforever.ice.telemetry.SessionId
 import com.faforever.ice.telemetry.domain.ClientRequestCurrentState
 import com.faforever.ice.telemetry.domain.ClientRequestedUnknownGame
+import com.faforever.ice.telemetry.domain.CoturnListUpdated
+import com.faforever.ice.telemetry.domain.CoturnServer
 import com.faforever.ice.telemetry.domain.GameId
 import com.faforever.ice.telemetry.domain.GameUpdated
 import com.faforever.ice.telemetry.domain.PeerConnected
@@ -45,14 +47,14 @@ class MessageHandler(
         }
     }
 
-    override fun handle(message: String, session: WebSocketSession) {
+    override fun handle(gameId: GameId, message: String, session: WebSocketSession) {
         val message = parseMessageOrRespondError(message, session) ?: return
 
         when (message) {
             is RegisterAsPeer -> {
                 applicationEventPublisher.publishEventAsync(
                     PeerConnected(
-                        GameId(message.gameId),
+                        gameId,
                         message.adapterVersion,
                         ProtocolVersion(1),
                         PlayerId(message.playerId),
@@ -65,9 +67,27 @@ class MessageHandler(
             is RegisterAsUi -> {
                 applicationEventPublisher.publishEventAsync(
                     UiConnected(
-                        GameId(message.gameId),
+                        gameId,
                         PlayerId(message.playerId),
                         session.getSessionId(),
+                    )
+                )
+            }
+
+            is UpdateCoturnList -> {
+                applicationEventPublisher.publishEventAsync(
+                    CoturnListUpdated(
+                        gameId,
+                        message.playerId,
+                        message.connectedHost,
+                        message.knownServers.map {
+                            CoturnServer(
+                                it.region,
+                                it.host,
+                                it.port,
+                                it.averageRTT,
+                            )
+                        }
                     )
                 )
             }

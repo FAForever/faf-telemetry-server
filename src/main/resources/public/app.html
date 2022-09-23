@@ -5,9 +5,9 @@
     <title>FAF ICE Adapter</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.0.0-beta.83/dist/themes/light.css"/>
-    <script type="module" src="app.js" defer></script>
     <script type="module"
             src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.0.0-beta.83/dist/shoelace.js"></script>
+    <script type="module" src="app.js" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css"
           integrity="sha512-HK5fgLBL+xu6dm/Ii3z4xhlSUyZgTT9tuc/hSrtw6uzJOvgRr2a9jyxxT1ely+B+xFAmJKVSTbpM/CuL7qxO8w=="
           crossorigin="anonymous"/>
@@ -28,32 +28,41 @@
         <sl-badge variant="neutral" pill>
             <sl-icon name="info-circle"></sl-icon>
             Adapter Version:
-            <faf-var name="adapter-version">unknown</faf-var>
+            <sl-spinner></sl-spinner><faf-var id="adapterVersion">unknown</faf-var>
         </sl-badge>
         <sl-badge variant="neutral" pill>
             <sl-icon name="info-circle"></sl-icon>
-            Protocol Version: v1
+            Adapter Protocol:
+            <sl-spinner></sl-spinner><faf-var id="adapterProtocol">v1</faf-var>
         </sl-badge>
         <sl-badge variant="danger" pill>
             <sl-icon name="exclamation-triangle"></sl-icon>
             Could not connect to local adapter
         </sl-badge>
     </header>
-    <main>
+    <main class="loading">
         <div class="details-group-example">
             <sl-details summary="Live ICE adapter state" open>
 
                 <sl-badge variant="primary" pill>
                     <sl-icon name="info-circle"></sl-icon>
-                    Game ID : 4711
+                    Game ID: <sl-spinner></sl-spinner><faf-var id="gameId">4711</faf-var>
+                </sl-badge>
+                <sl-badge variant="primary" pill>
+                    <sl-icon name="info-circle"></sl-icon>
+                    Player ID: <sl-spinner></sl-spinner><faf-var id="playerId">5000</faf-var>
+                </sl-badge>
+                <sl-badge variant="primary" pill>
+                    <sl-icon name="info-circle"></sl-icon>
+                    Player Name: <sl-spinner></sl-spinner><faf-var id="playerName">Brutus5000</faf-var>
                 </sl-badge>
                 <sl-badge variant="warning" pill>
                     <sl-icon name="router"></sl-icon>
-                    Game State : Connecting players
+                    Game State: <sl-spinner></sl-spinner><faf-var  id="gameState">connecting</faf-var>
                 </sl-badge>
                 <sl-badge variant="primary" pill>
                     <sl-icon name="geo-alt"></sl-icon>
-                    Your Coturn : coturn-eu-1.supcomhub.org
+                    Your Coturn: <sl-spinner></sl-spinner><faf-var>coturn-eu-1.supcomhub.org</faf-var>
                 </sl-badge>
 
                 <fw-data-table id="connections-table" is-selectable="false" label="Peer connections">

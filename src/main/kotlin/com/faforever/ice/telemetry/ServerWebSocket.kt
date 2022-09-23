@@ -13,7 +13,7 @@ import java.lang.IllegalStateException
 interface MessageHandler {
     fun onOpen(gameId: GameId, session: WebSocketSession)
     fun onClose(gameId: GameId, session: WebSocketSession)
-    fun handle(message: String, session: WebSocketSession)
+    fun handle(gameId: GameId, message: String, session: WebSocketSession)
 }
 
 @JvmInline
@@ -85,12 +85,16 @@ class ServerWebSocket(
     }
 
     @OnMessage
-    fun onMessage(message: String, session: WebSocketSession) {
+    fun onMessage(gameId: String, message: String, session: WebSocketSession) {
         log.info("onMessage: $message")
+
+        val gameId = (gameId.toIntOrNull() ?: return session.close(
+            CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
+        )).let { GameId(it) }
 
         val messageHandler = sessionHandlers[session]
             ?: throw IllegalStateException("No message handler for session $session.id")
-        messageHandler.handle(message, session)
+        messageHandler.handle(gameId, message, session)
     }
 }
 

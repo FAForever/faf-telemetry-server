@@ -39,7 +39,7 @@ class GameService(
             "0.1.0-SNAPSHOT",
             ProtocolVersion(1),
             PlayerId(5000),
-            playerName = "Brutus5000"
+            "Brutus5000",
         )
     }
 
@@ -49,7 +49,7 @@ class GameService(
             peerConnected.adapterVersion,
             peerConnected.protocolVersion,
             peerConnected.playerId,
-            peerConnected.playerName
+            peerConnected.playerName,
         )
 
         val peer = Peer(
