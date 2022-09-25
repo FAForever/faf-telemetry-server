@@ -1,10 +1,13 @@
-package com.faforever.ice.telemetry.protocol.v1
+package com.faforever.ice.telemetry.adapter.protocol.v1
 
-import com.faforever.ice.telemetry.ProtocolVersion
 import com.faforever.ice.telemetry.domain.PlayerId
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import io.micronaut.core.annotation.Introspected
 import java.util.UUID
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "messageType")
@@ -15,6 +18,7 @@ import java.util.UUID
     Type(value = DisconnectFromPeer::class, name = "DisconnectFromPeer"),
     Type(value = PeerConnectivityUpdate::class, name = "PeerConnectivityUpdate"),
     Type(value = GameStateChanged::class, name = "GameStateChanged"),
+    Type(value = UpdateCoturnList::class, name = "UpdateCoturnList"),
 )
 interface IncomingMessageV1 {
     val messageId: UUID
@@ -74,9 +78,11 @@ data class CoturnServer(
     val port: Int,
     val averageRTT: Double
 )
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class UpdateCoturnList(
     override val messageId: UUID,
-    val playerId: PlayerId,
+    val playerId: Int,
     val connectedHost: String,
     val knownServers: List<CoturnServer>
 ) : IncomingMessageV1

@@ -12,7 +12,12 @@ value class GameId(val id: Int)
 
 data class Player(val id: PlayerId, val name: String)
 
-data class Peer(val gameId: GameId, val userId: Int, val userName: String)
+data class PlayerConnection(
+    val player: Player,
+    val adapter: Adapter,
+    val coturnServers: List<CoturnServer>,
+)
+
 
 data class Candidate(val networkAdapter: String)
 
@@ -28,14 +33,13 @@ data class PeerConnection(
 
 data class Game(
     val id: GameId,
-    val host: Player,
+    val host: PlayerId,
     val state: String,
-    val participants: Map<PlayerId, Peer>
+    val participants: MutableMap<PlayerId, PlayerConnection>
 )
 
 data class Adapter(
     val version: String,
     val protocolVersion: ProtocolVersion,
-    val playerId: PlayerId,
-    val playerName: String,
+    val connectedHost: String?,
 )

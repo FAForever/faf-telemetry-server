@@ -6,9 +6,9 @@ function setVariable(id, value) {
 
 // Always escape HTML for text arguments!
 function escapeHtml(html) {
-    const div = document.createElement('div');
-    div.textContent = html;
-    return div.innerHTML;
+    const div = document.createElement('div')
+    div.textContent = html
+    return div.innerHTML
 }
 
 // Custom function to emit toast notifications
@@ -23,8 +23,8 @@ function notify(message, variant = 'primary', icon = 'info-circle', duration = 3
       `
     });
 
-    document.body.append(alert);
-    return alert.toast();
+    document.body.append(alert)
+    return alert.toast()
 }
 // Custom function to emit toast notifications
 function peristentError(message) {
@@ -35,32 +35,26 @@ function peristentError(message) {
         <sl-icon name="exclamation-octagon" slot="icon"></sl-icon>
         ${escapeHtml(message)}
       `
-    });
+    })
 
-    document.body.append(alert);
-    return alert.toast();
+    document.body.append(alert)
+    return alert.toast()
 }
 
 const params = new Proxy(new URLSearchParams(window.location.search), {
     get: (searchParams, prop) => searchParams.get(prop),
-});
+})
 
-const gameId = params.gameId
-const playerId = params.playerId;
+const gameId = parseInt(params.gameId)
+const playerId = parseInt(params.playerId)
 const isValid = (!!gameId) && (!!playerId)
 
-console.log(`Launched application with gameId=${gameId}, playerId=${playerId}, isValid=${isValid}`)
+console.log(`Launched application with gameId=${gameId}, playerId=${playerId}, isValid=${isValid}`);
 
 if (isValid) {
-    const telemetrySocket = new WebSocket(`ws://localhost:8080/ws/v1/game/${gameId}`);
+    const telemetrySocket = new WebSocket(`ws://localhost:8080/ui/game/${gameId}`);
     telemetrySocket.onopen = event => {
         console.log("Telemetry socket opened");
-
-        telemetrySocket.send(JSON.stringify({
-            messageId: crypto.randomUUID(),
-            messageType: "RegisterAsUi",
-            playerId: playerId,
-        }));
     }
     telemetrySocket.onclose = event => console.log(`Telemetry socket closed (code=${event.code},reason=${event.reason}`);
     telemetrySocket.onmessage = event => {
@@ -70,8 +64,14 @@ if (isValid) {
             case "Error":
                 console.log(`Error on Websocket: ${JSON.stringify(message)}`);
                 return;
-            case "AdapterMessage":
+            case "AdapterInfoMessage":
                 console.log(`AdapterMessage: ${JSON.stringify(message)}`);
+
+                if(message.playerId !== playerId) {
+                    console.log(`Ignoring message for other player`);
+                    return;
+                }
+
                 document.body.classList.remove("loading")
                 document.body.classList.add("loaded")
                 setVariable("adapterVersion", message.version)
@@ -79,8 +79,43 @@ if (isValid) {
                 setVariable("playerId", message.playerId)
                 setVariable("playerName", message.playerName)
                 return;
+            case "UpdateCoturnList":
+                if(message.playerId !== playerId) {
+                    console.log(`Ignoring message for other player`);
+                    return;
+                }
+
+                const coturnTable = document.getElementById("coturn-table")
+                const tbody = coturnTable.tBodies[0]
+
+                const rowsToDelete = tbody.rows.length; // keep the header!
+                for(let i = 0; i < rowsToDelete; i++)
+                {
+                    coturnTable.deleteRow(-1)
+                }
+
+                if(message.knownServers) {
+                    for(let coturnServer of message.knownServers) {
+                        const newRow = tbody.insertRow()
+
+                        const regionCol = newRow.insertCell(-1)
+                        regionCol.innerHTML = coturnServer.region
+
+                        const hostCol = newRow.insertCell(-1)
+                        hostCol.innerHTML = coturnServer.host
+
+                        const portCol =newRow.insertCell(-1)
+                        portCol.innerHTML = coturnServer.port
+                        portCol.className = 'numeric'
+
+                        const averageRTTCol = newRow.insertCell(-1)
+                        averageRTTCol.innerHTML = coturnServer.averageRTT
+                        averageRTTCol.className = 'numeric'
+                    }
+                }
+                return;
             default:
-                console.log(`Unmapped message on Websocket: ${JSON.stringify(message)}`);
+                console.log(`Unmapped message on Websocket: ${JSON.stringify(message)}`)
                 return;
         }
 

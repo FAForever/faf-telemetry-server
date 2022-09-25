@@ -23,8 +23,6 @@ data class UiConnected(
 
 data class GameUpdated(val game: Game): DomainEvent
 
-data class ClientRequestCurrentState(val sessionId: SessionId, val adapter: Adapter?, val game: Game): DomainEvent
-
 data class ClientRequestedUnknownGame(val sessionId: SessionId, val gameId: GameId): DomainEvent
 
 data class CoturnServer(

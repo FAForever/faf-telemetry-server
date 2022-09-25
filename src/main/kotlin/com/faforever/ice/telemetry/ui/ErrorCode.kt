@@ -1,4 +1,4 @@
-package com.faforever.ice.telemetry.protocol.v1
+package com.faforever.ice.telemetry.ui
 
 enum class ErrorCode {
     UNPARSEABLE_MESSAGE,

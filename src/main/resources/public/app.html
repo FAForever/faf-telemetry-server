@@ -18,7 +18,7 @@
     <header>
         <div style="display: grid; grid-template-columns: auto auto; justify-content: center; gap: 1ch;">
             <img src="https://faforever.com/images/faf-logo.png" style="height: 3rem;">
-            <h1 style="font-size: 3rem; line-height: 3rem; margin-block: 0;">ICE adapter UI</h1>
+            <h1 style="font-size: 3rem; line-height: 3rem; margin-block: 0;">ICE Adapter UI</h1>
         </div>
 
         <sl-badge variant="neutral" pill>
@@ -34,10 +34,6 @@
             <sl-icon name="info-circle"></sl-icon>
             Adapter Protocol:
             <sl-spinner></sl-spinner><faf-var id="adapterProtocol">v1</faf-var>
-        </sl-badge>
-        <sl-badge variant="danger" pill>
-            <sl-icon name="exclamation-triangle"></sl-icon>
-            Could not connect to local adapter
         </sl-badge>
     </header>
     <main class="loading">
@@ -70,7 +66,7 @@
             </sl-details>
 
             <sl-details summary="Coturn servers" open>
-                <table class="zebra">
+                <table class="zebra" id="coturn-table">
                     <thead>
                     <tr>
                         <td>Region</td>
@@ -79,18 +75,11 @@
                         <td class="numeric">Average RTT</td>
                     </tr>
                     </thead>
-                    <tbody>
+                    <tbody >
                     <tr>
-                        <td>Europe</td>
-                        <td>coturn-eu-1.supcomhub.org</td>
-                        <td class="numeric">3478</td>
-                        <td class="numeric">n/a</td>
-                    </tr>
-                    <tr>
-                        <td>Europe</td>
-                        <td>faforever.com</td>
-                        <td class="numeric">3478</td>
-                        <td class="numeric">39 ms</td>
+                        <td colspan="4" class="centered">
+                            <sl-spinner></sl-spinner>
+                        </td>
                     </tr>
                     </tbody>
                 </table>

@@ -1,4 +1,4 @@
-package com.faforever.ice.telemetry.protocol.v1
+package com.faforever.ice.telemetry.adapter.protocol.v1
 
 import com.faforever.ice.telemetry.domain.GameId
 

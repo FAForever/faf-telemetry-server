@@ -1,6 +1,6 @@
 package com.faforever.ice.telemetry
 
-import com.faforever.ice.telemetry.protocol.v1.SessionState
+import com.faforever.ice.telemetry.adapter.protocol.v1.SessionState
 import io.micronaut.websocket.WebSocketSession
 import jakarta.inject.Singleton
 
