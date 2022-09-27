@@ -1,6 +1,8 @@
 package com.faforever.ice.telemetry.adapter.protocol.v1
 
+import com.faforever.ice.telemetry.domain.Game
 import com.faforever.ice.telemetry.domain.PlayerId
+import com.faforever.ice.telemetry.ui.AdapterInfoMessage
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -54,7 +56,6 @@ data class ErrorResponse(
 data class AdapterMessage(
     val version: String,
     val protocolVersion: Int,
-    val playerId: Int,
     val playerName: String,
     override val messageId: UUID = UUID.randomUUID(),
 ) : OutgoingMessageV1
@@ -76,15 +77,18 @@ data class CoturnServer(
     val region: String,
     val host: String,
     val port: Int,
-    val averageRTT: Double
+    val averageRTT: Double?
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 data class UpdateCoturnList(
     override val messageId: UUID,
-    val playerId: Int,
     val connectedHost: String,
     val knownServers: List<CoturnServer>
+) : IncomingMessageV1
+
+data class UpdateGameState(
+    override val messageId: UUID,
+    val newGameState: Game.State,
 ) : IncomingMessageV1
 
 //data class HostGame(val messageId: UUID, val gameId:)
@@ -94,7 +98,6 @@ data class UpdateCoturnList(
 data class RegisterAsPeer(
     override val messageId: UUID,
     val adapterVersion: String,
-    val playerId: Int,
     val userName: String,
 ) : IncomingMessageV1
 
@@ -122,7 +125,7 @@ data class PeerConnectivityUpdate(
 
 data class GameStateChanged(
     override val messageId: UUID,
-    val newState: String,
+    val newState: Game.State,
 ) : IncomingMessageV1
 
 

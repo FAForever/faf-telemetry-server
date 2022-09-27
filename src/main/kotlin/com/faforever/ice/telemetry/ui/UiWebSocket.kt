@@ -3,11 +3,11 @@ package com.faforever.ice.telemetry.ui
 
 import com.faforever.ice.telemetry.GameService
 import com.faforever.ice.telemetry.domain.CoturnListUpdated
+import com.faforever.ice.telemetry.domain.Game
 import com.faforever.ice.telemetry.domain.GameId
+import com.faforever.ice.telemetry.domain.GameUpdated
+import com.faforever.ice.telemetry.domain.GpgnetState
 import com.faforever.ice.telemetry.domain.PeerConnected
-import com.faforever.ice.telemetry.protocol.ui.AdapterInfoMessage
-import com.faforever.ice.telemetry.protocol.ui.OutgoingUiMessage
-import com.faforever.ice.telemetry.protocol.ui.UpdateCoturnList
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.websocket.CloseReason
@@ -49,7 +49,10 @@ class UiWebSocket(
                     playerConnection.player.id.id,
                     playerConnection.adapter.version,
                     playerConnection.adapter.protocolVersion.id,
-                    playerConnection.player.name
+                    playerConnection.player.name,
+                    null,
+                    GpgnetState.OFFLINE,
+                    Game.State.NONE,
                 )
             )
 
@@ -110,9 +113,39 @@ class UiWebSocket(
                         event.playerId.id,
                         event.adapterVersion,
                         event.protocolVersion.id,
-                        event.playerName
+                        event.playerName,
+                        null,
+                        GpgnetState.OFFLINE,
+                        Game.State.NONE,
                     )
                 )
+            }
+
+    @EventListener
+    fun onEvent(event: GameUpdated) =
+        activeListeners.getOrDefault(event.game.id, emptyList())
+            .forEach { session ->
+                with(event.game) {
+                    session.sendV1(
+                        GameUpdatedMessage(
+                            id.id,
+                            host.id,
+                            state,
+                            participants.map { (playerId, meta) ->
+                                GameUpdatedMessage.PlayerMeta(
+                                    playerId.id,
+                                    meta.player.name,
+                                    meta.adapter.protocolVersion.id,
+                                    meta.adapter.version,
+                                    meta.adapter.connectedHost,
+                                    meta.adapter.gpgnetState,
+                                    meta.adapter.gameState,
+                                    listOf()
+                                )
+                            }.associateBy { it.playerId }
+                        )
+                    )
+                }
             }
 
     @EventListener
@@ -134,4 +167,5 @@ class UiWebSocket(
                     )
                 )
             }
+
 }

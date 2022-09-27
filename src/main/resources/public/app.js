@@ -1,7 +1,12 @@
-import { SlAlert } from "https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.0.0-beta.83/dist/shoelace.js"
+import {SlAlert} from "https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.0.0-beta.83/dist/shoelace.js"
 
-function setVariable(id, value) {
-    document.getElementById(id).innerText = value
+function setVariable(id, value, pillVariantSelector) {
+    const varElement = document.getElementById(id)
+    varElement.innerText = value
+
+    if (pillVariantSelector && varElement.parentElement.tagName === "SL-BADGE") {
+        varElement.parentElement.variant = pillVariantSelector(value)
+    }
 }
 
 // Always escape HTML for text arguments!
@@ -26,8 +31,9 @@ function notify(message, variant = 'primary', icon = 'info-circle', duration = 3
     document.body.append(alert)
     return alert.toast()
 }
+
 // Custom function to emit toast notifications
-function peristentError(message) {
+function persistentError(message) {
     const alert = Object.assign(document.createElement('sl-alert'), {
         variant: 'danger',
         closable: false,
@@ -67,7 +73,7 @@ if (isValid) {
             case "AdapterInfoMessage":
                 console.log(`AdapterMessage: ${JSON.stringify(message)}`);
 
-                if(message.playerId !== playerId) {
+                if (message.playerId !== playerId) {
                     console.log(`Ignoring message for other player`);
                     return;
                 }
@@ -75,12 +81,26 @@ if (isValid) {
                 document.body.classList.remove("loading")
                 document.body.classList.add("loaded")
                 setVariable("adapterVersion", message.version)
-                setVariable("adapterProtocol", 'v'+message.protocolVersion)
+                setVariable("adapterProtocol", 'v' + message.protocolVersion)
                 setVariable("playerId", message.playerId)
                 setVariable("playerName", message.playerName)
+                setVariable("gpgnetState", message.gpgnetState, value => {
+                    switch (value) {
+                        case "OFFLINE": return "danger";
+                        case "WAITING_FOR_GAME": return "warn";
+                        case "GAME_CONNECTED": return "success";
+                    }
+                })
+                setVariable("gameState", message.gameState, value => {
+                    switch (value) {
+                        case "NONE": return "danger";
+                        default: return "primary";
+                    }
+                })
+                setVariable("coturnHost", message.connectedHost == null ? "n/a" : message.connectedHost)
                 return;
             case "UpdateCoturnList":
-                if(message.playerId !== playerId) {
+                if (message.playerId !== playerId) {
                     console.log(`Ignoring message for other player`);
                     return;
                 }
@@ -89,13 +109,12 @@ if (isValid) {
                 const tbody = coturnTable.tBodies[0]
 
                 const rowsToDelete = tbody.rows.length; // keep the header!
-                for(let i = 0; i < rowsToDelete; i++)
-                {
+                for (let i = 0; i < rowsToDelete; i++) {
                     coturnTable.deleteRow(-1)
                 }
 
-                if(message.knownServers) {
-                    for(let coturnServer of message.knownServers) {
+                if (message.knownServers) {
+                    for (let coturnServer of message.knownServers) {
                         const newRow = tbody.insertRow()
 
                         const regionCol = newRow.insertCell(-1)
@@ -104,12 +123,12 @@ if (isValid) {
                         const hostCol = newRow.insertCell(-1)
                         hostCol.innerHTML = coturnServer.host
 
-                        const portCol =newRow.insertCell(-1)
+                        const portCol = newRow.insertCell(-1)
                         portCol.innerHTML = coturnServer.port
                         portCol.className = 'numeric'
 
                         const averageRTTCol = newRow.insertCell(-1)
-                        averageRTTCol.innerHTML = coturnServer.averageRTT
+                        averageRTTCol.innerHTML = coturnServer.averageRTT == null ? "n/a" : coturnServer.averageRTT
                         averageRTTCol.className = 'numeric'
                     }
                 }
@@ -122,5 +141,5 @@ if (isValid) {
 
     };
 } else {
-    peristentError("No game id or player id specified!");
+    persistentError("No game id or player id specified!");
 }

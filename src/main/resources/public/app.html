@@ -52,13 +52,17 @@
                     <sl-icon name="info-circle"></sl-icon>
                     Player Name: <sl-spinner></sl-spinner><faf-var id="playerName">Brutus5000</faf-var>
                 </sl-badge>
-                <sl-badge variant="warning" pill>
+                <sl-badge variant="primary" pill>
+                    <sl-icon name="router"></sl-icon>
+                    GPGNet State: <sl-spinner></sl-spinner><faf-var  id="gpgnetState">OFFLINE</faf-var>
+                </sl-badge>
+                <sl-badge variant="primary" pill>
                     <sl-icon name="router"></sl-icon>
                     Game State: <sl-spinner></sl-spinner><faf-var  id="gameState">connecting</faf-var>
                 </sl-badge>
                 <sl-badge variant="primary" pill>
                     <sl-icon name="geo-alt"></sl-icon>
-                    Your Coturn: <sl-spinner></sl-spinner><faf-var>coturn-eu-1.supcomhub.org</faf-var>
+                    Your Coturn: <sl-spinner></sl-spinner><faf-var id="coturnHost">coturn-eu-1.supcomhub.org</faf-var>
                 </sl-badge>
 
                 <fw-data-table id="connections-table" is-selectable="false" label="Peer connections">

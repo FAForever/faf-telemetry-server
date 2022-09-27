@@ -8,10 +8,11 @@ import com.faforever.ice.telemetry.adapter.protocol.v1.OnlyIdMessage
 import com.faforever.ice.telemetry.adapter.protocol.v1.OutgoingMessageV1
 import com.faforever.ice.telemetry.adapter.protocol.v1.RegisterAsPeer
 import com.faforever.ice.telemetry.adapter.protocol.v1.UpdateCoturnList
-import com.faforever.ice.telemetry.domain.ClientRequestedUnknownGame
+import com.faforever.ice.telemetry.adapter.protocol.v1.UpdateGameState
 import com.faforever.ice.telemetry.domain.CoturnListUpdated
 import com.faforever.ice.telemetry.domain.CoturnServer
 import com.faforever.ice.telemetry.domain.GameId
+import com.faforever.ice.telemetry.domain.GameStateUpdated
 import com.faforever.ice.telemetry.domain.GameUpdated
 import com.faforever.ice.telemetry.domain.PeerConnected
 import com.faforever.ice.telemetry.domain.PlayerId
@@ -33,51 +34,52 @@ value class SessionId(val id: String)
 @JvmInline
 value class ProtocolVersion(val id: Int)
 
-@ServerWebSocket("/adapter/v1/game/{gameId}")
+@ServerWebSocket("/adapter/v1/game/{gameId}/player/{playerId}")
 class AdapterServerWebSocket(
     private val objectMapper: ObjectMapper,
     private val applicationEventPublisher: ApplicationEventPublisher<Any>
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private val gameSessions: MutableMap<GameId, MutableList<WebSocketSession>> = ConcurrentHashMap()
-    private val sessionsById: MutableMap<SessionId, WebSocketSession> = ConcurrentHashMap()
+    private val gameSessions: MutableMap<GameId, MutableMap<PlayerId, WebSocketSession>> = ConcurrentHashMap()
 
     @OnOpen
-    fun onOpen(gameId: String, session: WebSocketSession) {
+    fun onOpen(gameId: String, playerId: String, session: WebSocketSession) {
         log.info("Websocket opened session id $session.id [protocol=v1,gameId=$gameId]")
 
         val gameId = (gameId.toIntOrNull() ?: return session.close(
             CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
         )).let { GameId(it) }
 
-        sessionsById[SessionId(session.id)] = session
-        gameSessions.getOrPut(gameId) { mutableListOf() }.add(session)
+        val playerId = (playerId.toIntOrNull() ?: return session.close(
+            CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
+        )).let { PlayerId(it) }
+
+        gameSessions.getOrPut(gameId) { ConcurrentHashMap() }[playerId] = session
     }
 
     @OnClose
-    fun onClose(gameId: String, session: WebSocketSession) {
+    fun onClose(gameId: Int, playerId: Int, session: WebSocketSession) {
         log.info("Websocket closed session id $session.id [protocol=v1,gameId=$gameId]")
 
-        val gameId = (gameId.toIntOrNull() ?: return session.close(
-            CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
-        )).let { GameId(it) }
-
-        sessionsById.remove(session.getSessionId())
+        val gameId = GameId(gameId)
+        val playerId = PlayerId(playerId)
 
         val currentGameSessions = gameSessions[gameId]
             ?: throw IllegalStateException("Game id $gameId not in game sessions")
-        currentGameSessions.remove(session)
+
+        currentGameSessions.remove(playerId)
         if (currentGameSessions.isEmpty()) {
             gameSessions.remove(gameId)
         }
     }
 
     @OnMessage
-    fun onMessage(gameId: Int, message: String, session: WebSocketSession) {
+    fun onMessage(gameId: Int, playerId: Int, message: String, session: WebSocketSession) {
         log.info("onMessage: $message")
 
         val gameId = GameId(gameId)
+        val playerId = PlayerId(playerId)
         val message = parseMessageOrRespondError(message, session) ?: return
 
         when (message) {
@@ -87,7 +89,7 @@ class AdapterServerWebSocket(
                         gameId,
                         message.adapterVersion,
                         ProtocolVersion(1),
-                        PlayerId(message.playerId),
+                        playerId,
                         message.userName,
                         session.getSessionId(),
                     )
@@ -98,7 +100,7 @@ class AdapterServerWebSocket(
                 applicationEventPublisher.publishEventAsync(
                     CoturnListUpdated(
                         gameId,
-                        PlayerId(message.playerId),
+                        playerId,
                         message.connectedHost,
                         message.knownServers.map {
                             CoturnServer(
@@ -108,6 +110,16 @@ class AdapterServerWebSocket(
                                 it.averageRTT,
                             )
                         }
+                    )
+                )
+            }
+
+            is UpdateGameState -> {
+                applicationEventPublisher.publishEventAsync(
+                    GameStateUpdated(
+                        gameId,
+                        playerId,
+                        message.newGameState,
                     )
                 )
             }
@@ -141,10 +153,10 @@ class AdapterServerWebSocket(
 
     @EventListener
     fun handle(event: GameUpdated) {
-        val sessions = gameSessions[event.game.id] ?: emptyList()
+        val sessions = gameSessions[event.game.id] ?: emptyMap()
 
-        sessions.forEach {
-            it.sendV1(
+        sessions.forEach { (_, session) ->
+            session.sendV1(
                 GameUpdatedMessage(
                     event.game.id.id,
                     event.game.host.id,
@@ -153,17 +165,6 @@ class AdapterServerWebSocket(
                 )
             )
         }
-    }
-
-    @EventListener
-    fun handle(event: ClientRequestedUnknownGame) {
-        sessionsById[event.sessionId]?.sendV1(
-            GeneralError(
-                ErrorCode.GAME_UNKNOWN,
-                null,
-                mapOf("gameId" to event.gameId)
-            )
-        )
     }
 }
 
