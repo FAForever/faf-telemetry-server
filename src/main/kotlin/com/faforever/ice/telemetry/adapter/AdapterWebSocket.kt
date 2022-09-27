@@ -1,7 +1,6 @@
 package com.faforever.ice.telemetry
 
 import com.faforever.ice.telemetry.adapter.protocol.v1.ErrorCode
-import com.faforever.ice.telemetry.adapter.protocol.v1.GameUpdatedMessage
 import com.faforever.ice.telemetry.adapter.protocol.v1.GeneralError
 import com.faforever.ice.telemetry.adapter.protocol.v1.IncomingMessageV1
 import com.faforever.ice.telemetry.adapter.protocol.v1.OnlyIdMessage
@@ -9,16 +8,16 @@ import com.faforever.ice.telemetry.adapter.protocol.v1.OutgoingMessageV1
 import com.faforever.ice.telemetry.adapter.protocol.v1.RegisterAsPeer
 import com.faforever.ice.telemetry.adapter.protocol.v1.UpdateCoturnList
 import com.faforever.ice.telemetry.adapter.protocol.v1.UpdateGameState
+import com.faforever.ice.telemetry.adapter.protocol.v1.UpdateGpgnetState
 import com.faforever.ice.telemetry.domain.CoturnListUpdated
 import com.faforever.ice.telemetry.domain.CoturnServer
 import com.faforever.ice.telemetry.domain.GameId
 import com.faforever.ice.telemetry.domain.GameStateUpdated
-import com.faforever.ice.telemetry.domain.GameUpdated
+import com.faforever.ice.telemetry.domain.GpgnetStateUpdated
 import com.faforever.ice.telemetry.domain.PeerConnected
 import com.faforever.ice.telemetry.domain.PlayerId
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.micronaut.context.event.ApplicationEventPublisher
-import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.websocket.CloseReason
 import io.micronaut.websocket.WebSocketSession
 import io.micronaut.websocket.annotation.OnClose
@@ -119,7 +118,17 @@ class AdapterServerWebSocket(
                     GameStateUpdated(
                         gameId,
                         playerId,
-                        message.newGameState,
+                        message.newState,
+                    )
+                )
+            }
+
+            is UpdateGpgnetState -> {
+                applicationEventPublisher.publishEventAsync(
+                    GpgnetStateUpdated(
+                        gameId,
+                        playerId,
+                        message.newState,
                     )
                 )
             }
@@ -148,23 +157,6 @@ class AdapterServerWebSocket(
         objectMapper.readValue(message, OnlyIdMessage::class.java).messageId
     } catch (e: Exception) {
         null
-    }
-
-
-    @EventListener
-    fun handle(event: GameUpdated) {
-        val sessions = gameSessions[event.game.id] ?: emptyMap()
-
-        sessions.forEach { (_, session) ->
-            session.sendV1(
-                GameUpdatedMessage(
-                    event.game.id.id,
-                    event.game.host.id,
-                    "someState",
-                    mapOf()
-                )
-            )
-        }
     }
 }
 

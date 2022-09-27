@@ -36,3 +36,9 @@ data class GameStateUpdated(
     val playerId: PlayerId,
     val newGameState: Game.State,
 ): DomainEvent
+
+data class GpgnetStateUpdated(
+    val gameId: GameId,
+    val playerId: PlayerId,
+    val newGameState: GpgnetState,
+): DomainEvent

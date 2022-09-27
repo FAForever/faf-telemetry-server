@@ -1,6 +1,7 @@
 package com.faforever.ice.telemetry.adapter.protocol.v1
 
 import com.faforever.ice.telemetry.domain.Game
+import com.faforever.ice.telemetry.domain.GpgnetState
 import com.faforever.ice.telemetry.domain.PlayerId
 import com.faforever.ice.telemetry.ui.AdapterInfoMessage
 import com.fasterxml.jackson.annotation.JsonIgnore
@@ -15,11 +16,11 @@ import java.util.UUID
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "messageType")
 @JsonSubTypes(
     Type(value = RegisterAsPeer::class, name = "RegisterAsPeer"),
-    Type(value = RegisterAsUi::class, name = "RegisterAsUi"),
     Type(value = ConnectToPeer::class, name = "ConnectToPeer"),
     Type(value = DisconnectFromPeer::class, name = "DisconnectFromPeer"),
     Type(value = PeerConnectivityUpdate::class, name = "PeerConnectivityUpdate"),
-    Type(value = GameStateChanged::class, name = "GameStateChanged"),
+    Type(value = UpdateGameState::class, name = "UpdateGameChange"),
+    Type(value = UpdateGpgnetState::class, name = "UpdateGpgnetState"),
     Type(value = UpdateCoturnList::class, name = "UpdateCoturnList"),
 )
 interface IncomingMessageV1 {
@@ -53,26 +54,6 @@ data class ErrorResponse(
     override val messageId: UUID = UUID.randomUUID(),
 ) : OutgoingMessageV1
 
-data class AdapterMessage(
-    val version: String,
-    val protocolVersion: Int,
-    val playerName: String,
-    override val messageId: UUID = UUID.randomUUID(),
-) : OutgoingMessageV1
-
-data class GameUpdatedMessage(
-    val gameId: Int,
-    val hostPlayerId: Int,
-    val state: String,
-    val participants: Map<Int, Peer>,
-    override val messageId: UUID = UUID.randomUUID(),
-) : OutgoingMessageV1 {
-    data class Peer(
-        val playerId: PlayerId,
-        val playerName: String,
-    )
-}
-
 data class CoturnServer(
     val region: String,
     val host: String,
@@ -88,22 +69,18 @@ data class UpdateCoturnList(
 
 data class UpdateGameState(
     override val messageId: UUID,
-    val newGameState: Game.State,
+    val newState: Game.State,
 ) : IncomingMessageV1
 
-//data class HostGame(val messageId: UUID, val gameId:)
-//data class JoinGame(val messageId: UUID, val userId: Int, val userName: String) : IncomingMessageV1
-
+data class UpdateGpgnetState(
+    override val messageId: UUID,
+    val newState: GpgnetState,
+) : IncomingMessageV1
 
 data class RegisterAsPeer(
     override val messageId: UUID,
     val adapterVersion: String,
     val userName: String,
-) : IncomingMessageV1
-
-data class RegisterAsUi(
-    override val messageId: UUID,
-    val playerId: Int,
 ) : IncomingMessageV1
 
 data class ConnectToPeer(
@@ -121,11 +98,6 @@ data class DisconnectFromPeer(
 data class PeerConnectivityUpdate(
     override val messageId: UUID,
     val id: Int,
-) : IncomingMessageV1
-
-data class GameStateChanged(
-    override val messageId: UUID,
-    val newState: Game.State,
 ) : IncomingMessageV1
 
 
