@@ -1,5 +1,3 @@
-import {SlAlert} from "https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.0.0-beta.83/dist/shoelace.js"
-
 function setVariable(id, value, pillVariantSelector) {
     const varElement = document.getElementById(id)
     varElement.innerText = value
@@ -66,17 +64,18 @@ if (isValid) {
     telemetrySocket.onmessage = event => {
         const message = JSON.parse(event.data)
 
+        console.log(message);
+        if (message.playerId > 0 && message.playerId !== playerId) {
+            console.log(`Ignoring message for other player`);
+            return;
+        }
+
         switch (message.messageType) {
             case "Error":
                 console.log(`Error on Websocket: ${JSON.stringify(message)}`);
                 return;
             case "AdapterInfoMessage":
                 console.log(`AdapterMessage: ${JSON.stringify(message)}`);
-
-                if (message.playerId !== playerId) {
-                    console.log(`Ignoring message for other player`);
-                    return;
-                }
 
                 document.body.classList.remove("loading")
                 document.body.classList.add("loaded")
@@ -86,24 +85,25 @@ if (isValid) {
                 setVariable("playerName", message.playerName)
                 setVariable("gpgnetState", message.gpgnetState, value => {
                     switch (value) {
-                        case "OFFLINE": return "danger";
-                        case "WAITING_FOR_GAME": return "warn";
-                        case "GAME_CONNECTED": return "success";
+                        case "OFFLINE":
+                            return "danger";
+                        case "WAITING_FOR_GAME":
+                            return "warn";
+                        case "GAME_CONNECTED":
+                            return "success";
                     }
                 })
                 setVariable("gameState", message.gameState, value => {
                     switch (value) {
-                        case "NONE": return "danger";
-                        default: return "primary";
+                        case "NONE":
+                            return "danger";
+                        default:
+                            return "primary";
                     }
                 })
                 setVariable("coturnHost", message.connectedHost == null ? "n/a" : message.connectedHost)
                 return;
             case "UpdateCoturnList":
-                if (message.playerId !== playerId) {
-                    console.log(`Ignoring message for other player`);
-                    return;
-                }
 
                 const coturnTable = document.getElementById("coturn-table")
                 const tbody = coturnTable.tBodies[0]
@@ -133,8 +133,64 @@ if (isValid) {
                     }
                 }
                 return;
+            case "UpdateGame":
+                if (message.gameState != undefined) {
+                    setVariable("gameState", message.gameState, value => {
+                        switch (value) {
+                            case "NONE":
+                                return "danger";
+                            default:
+                                return "primary";
+                        }
+                    })
+                }
+
+                const table = document.getElementById("connection-table")
+                table.innerHTML = ""; // delete all rows
+
+                if (message.participants == undefined) {
+                    return;
+                }
+
+                const participantCount = message.participants.length
+                const participants = message.participants.map((p, index) => {
+                    return {
+                        // row index and column index
+                        index: index + 1,
+                        ...p
+                    }
+                })
+
+                const participantsIndexById = Object.fromEntries(participants.map(p => [p.playerId, p.index]))
+
+                const headerRow = table.insertRow(-1)
+                // One more column for the leading column
+                for (let i = 0; i <= participantCount; i++) {
+                    headerRow.insertCell(-1);
+                }
+
+                for (const p of participants) {
+                    headerRow.cells[p.index].innerHTML = p.playerName
+
+                    const participantRow = table.insertRow(-1)
+                    // One more column for the leading column
+                    for (let i = 0; i <= participantCount; i++) {
+                        participantRow.insertCell(-1);
+                    }
+
+                    participantRow.cells[0].innerHTML = p.playerName
+                    if (p.connections) {
+                        for (const con of p.connections) {
+                            const conIndex = participantsIndexById[con.playerId]
+                            participantRow.cells[conIndex].innerHTML = `${con.localCandidate} -> ${con.remoteCandidate}`
+                        }
+                    }
+
+                    participantRow.cells[p.index].innerHTML = "-/-"
+                }
+                return;
             default:
-                console.log(`Unmapped message on Websocket: ${JSON.stringify(message)}`)
+                console.log(`Unmapped message type on Websocket: ${message.messageType}`)
                 return;
         }
 

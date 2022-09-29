@@ -2,15 +2,12 @@ package com.faforever.ice.telemetry.adapter.protocol.v1
 
 import com.faforever.ice.telemetry.domain.Game
 import com.faforever.ice.telemetry.domain.GpgnetState
-import com.faforever.ice.telemetry.domain.PlayerId
-import com.faforever.ice.telemetry.ui.AdapterInfoMessage
-import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.faforever.ice.telemetry.domain.IceState
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import io.micronaut.core.annotation.Introspected
+import org.ice4j.ice.CandidateType
+import java.time.Instant
 import java.util.UUID
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "messageType")
@@ -18,7 +15,8 @@ import java.util.UUID
     Type(value = RegisterAsPeer::class, name = "RegisterAsPeer"),
     Type(value = ConnectToPeer::class, name = "ConnectToPeer"),
     Type(value = DisconnectFromPeer::class, name = "DisconnectFromPeer"),
-    Type(value = PeerConnectivityUpdate::class, name = "PeerConnectivityUpdate"),
+    Type(value = UpdatePeerState::class, name = "UpdatePeerState"),
+    Type(value = UpdatePeerConnectivity::class, name = "PeerConnectivityUpdate"),
     Type(value = UpdateGameState::class, name = "UpdateGameChange"),
     Type(value = UpdateGpgnetState::class, name = "UpdateGpgnetState"),
     Type(value = UpdateCoturnList::class, name = "UpdateCoturnList"),
@@ -85,19 +83,30 @@ data class RegisterAsPeer(
 
 data class ConnectToPeer(
     override val messageId: UUID,
-    val id: Int,
-    val login: String,
+    val peerPlayerId: Int,
+    val peerName: String,
     val localOffer: Boolean
 ) : IncomingMessageV1
 
 data class DisconnectFromPeer(
     override val messageId: UUID,
-    val id: Int,
+    val peerPlayerId: Int,
 ) : IncomingMessageV1
 
-data class PeerConnectivityUpdate(
+data class UpdatePeerState(
     override val messageId: UUID,
-    val id: Int,
+    val peerPlayerId: Int,
+    val connected: Boolean,
+    val iceState: IceState,
+    val localCandidate: CandidateType,
+    val remoteCandidate: CandidateType,
+) : IncomingMessageV1
+
+data class UpdatePeerConnectivity(
+    override val messageId: UUID,
+    val peerPlayerId: Int,
+    val averageRTT: Double?,
+    val lastReceived: Instant?
 ) : IncomingMessageV1
 
 

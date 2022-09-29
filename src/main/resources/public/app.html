@@ -28,12 +28,14 @@
         <sl-badge variant="neutral" pill>
             <sl-icon name="info-circle"></sl-icon>
             Adapter Version:
-            <sl-spinner></sl-spinner><faf-var id="adapterVersion">unknown</faf-var>
+            <sl-spinner></sl-spinner>
+            <faf-var id="adapterVersion">unknown</faf-var>
         </sl-badge>
         <sl-badge variant="neutral" pill>
             <sl-icon name="info-circle"></sl-icon>
             Adapter Protocol:
-            <sl-spinner></sl-spinner><faf-var id="adapterProtocol">v1</faf-var>
+            <sl-spinner></sl-spinner>
+            <faf-var id="adapterProtocol">v1</faf-var>
         </sl-badge>
     </header>
     <main class="loading">
@@ -42,31 +44,43 @@
 
                 <sl-badge variant="primary" pill>
                     <sl-icon name="info-circle"></sl-icon>
-                    Game ID: <sl-spinner></sl-spinner><faf-var id="gameId">4711</faf-var>
+                    Game ID:
+                    <sl-spinner></sl-spinner>
+                    <faf-var id="gameId">4711</faf-var>
                 </sl-badge>
                 <sl-badge variant="primary" pill>
                     <sl-icon name="info-circle"></sl-icon>
-                    Player ID: <sl-spinner></sl-spinner><faf-var id="playerId">5000</faf-var>
+                    Player ID:
+                    <sl-spinner></sl-spinner>
+                    <faf-var id="playerId">5000</faf-var>
                 </sl-badge>
                 <sl-badge variant="primary" pill>
                     <sl-icon name="info-circle"></sl-icon>
-                    Player Name: <sl-spinner></sl-spinner><faf-var id="playerName">Brutus5000</faf-var>
+                    Player Name:
+                    <sl-spinner></sl-spinner>
+                    <faf-var id="playerName">Brutus5000</faf-var>
                 </sl-badge>
                 <sl-badge variant="primary" pill>
                     <sl-icon name="router"></sl-icon>
-                    GPGNet State: <sl-spinner></sl-spinner><faf-var  id="gpgnetState">OFFLINE</faf-var>
+                    GPGNet State:
+                    <sl-spinner></sl-spinner>
+                    <faf-var id="gpgnetState">OFFLINE</faf-var>
                 </sl-badge>
                 <sl-badge variant="primary" pill>
                     <sl-icon name="router"></sl-icon>
-                    Game State: <sl-spinner></sl-spinner><faf-var  id="gameState">connecting</faf-var>
+                    Game State:
+                    <sl-spinner></sl-spinner>
+                    <faf-var id="gameState">connecting</faf-var>
                 </sl-badge>
                 <sl-badge variant="primary" pill>
                     <sl-icon name="geo-alt"></sl-icon>
-                    Your Coturn: <sl-spinner></sl-spinner><faf-var id="coturnHost">coturn-eu-1.supcomhub.org</faf-var>
+                    Your Coturn:
+                    <sl-spinner></sl-spinner>
+                    <faf-var id="coturnHost">coturn-eu-1.supcomhub.org</faf-var>
                 </sl-badge>
 
-                <fw-data-table id="connections-table" is-selectable="false" label="Peer connections">
-                </fw-data-table>
+                <table id="connection-table">
+                </table>
             </sl-details>
 
             <sl-details summary="Coturn servers" open>
@@ -79,7 +93,7 @@
                         <td class="numeric">Average RTT</td>
                     </tr>
                     </thead>
-                    <tbody >
+                    <tbody>
                     <tr>
                         <td colspan="4" class="centered">
                             <sl-spinner></sl-spinner>
@@ -177,20 +191,30 @@
                     the connection.</em></p>
             </sl-details>
 
-            <sl-details summary="What is a Coturn server?" class="explanation">
-                <p>The FAF ICE adapter aims at managing all connections for the game. It's a program running on your
-                    local system started/stopped by the FAF client that offers an interface to the game. The game is
-                    then told by the FAF server/client/adapter to connect to other players, supplying it a wrong IP
-                    address. If you then join a FAF game, your game will think all of your peers it's connected to
-                    are
-                    located on your local machine. It sends all its traffic to the ice adapter, which then figures
-                    out
-                    how to forward it to the other players' ice adapters, which then forward it to their games.</p>
+            <sl-details summary="What are Coturn servers used for?" class="explanation">
+                <p><em>TL;DR:</em> Blindly adding more coturn servers doesn't help. But adding coturn servers with good
+                    connection across the globe helps to reduce lag in international games.</p>
 
-                <p>The ICE adapter uses the <strong>Interactive Connectivity Establishment</strong> (ICE,
-                    standardized
-                    as per <a href="https://datatracker.ietf.org/doc/html/rfc5245" target="_blank">RFC5254</a>) to,
-                    well, interactively establish connections.</p>
+                <p>Coturn is an <a href="https://github.com/coturn/coturn">open source server</a> that provides all the
+                    features required to implement the ICE protocol. The ICE adapter needs a coturn server to connect
+                    to.</p>
+
+                <p>In theory a single coturn server is sufficient to make connectivity work. However, when the ICE
+                    adapter uses a relay connection, the round trip time between the player and the coturn server adds
+                    up twice on top of the direct round trip time to the remote player.</p>
+
+                <p>A simple theoretical example: Alice and Bob live in Australia. They are connected in the same network
+                    and have a theoretical round trip time of 1ms. However, for some reason, a relayed connection to the
+                    FAF Coturn server in Europe is required. Now each packet from Alice to Bob has to travel to the
+                    Coturn server in Europe and back to Australia.
+                <p>Australia and Europe are 13000 km apart. Even in perfect scenario with a fibred connection in a
+                    straight line at the speed of light (200000 km/s) a packet still requires at least 65ms,
+                    making it an additional 130ms. The real world round trip time is much worse of course.</p>
+                <p><i>This is the reason why people had issues with Oceanian players. As long as only 1 player comes
+                    from Ocenian and the rest is European, the roundtrip only adds up once. But if 2 Ocenian players
+                    join it adds up twice, the game will most probably lag.</i></p>
+                <p>If we now set up an additional coturn server in Australia, Alice and Bobs round trip time is reduced
+                    massively, therefore reducing lag issues for all players.</p>
             </sl-details>
         </div>
     </main>

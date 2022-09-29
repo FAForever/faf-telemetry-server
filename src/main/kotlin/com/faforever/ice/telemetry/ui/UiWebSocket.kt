@@ -2,12 +2,12 @@ package com.faforever.ice.telemetry.ui
 
 
 import com.faforever.ice.telemetry.GameService
+import com.faforever.ice.telemetry.domain.AdapterConnected
 import com.faforever.ice.telemetry.domain.CoturnListUpdated
 import com.faforever.ice.telemetry.domain.Game
 import com.faforever.ice.telemetry.domain.GameId
 import com.faforever.ice.telemetry.domain.GameUpdated
 import com.faforever.ice.telemetry.domain.GpgnetState
-import com.faforever.ice.telemetry.domain.PeerConnected
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.websocket.CloseReason
@@ -70,6 +70,9 @@ class UiWebSocket(
                     }
                 )
             )
+
+            val game = gameService.getGame(gameId) ?: return
+            session.sendV1(UpdateGame.fromGame(game))
         }
     }
 
@@ -104,7 +107,7 @@ class UiWebSocket(
     }
 
     @EventListener
-    fun onEvent(event: PeerConnected) =
+    fun onEvent(event: AdapterConnected) =
         activeListeners.getOrDefault(event.gameId, emptyList())
             .forEach { session ->
                 session.sendV1(
@@ -124,29 +127,7 @@ class UiWebSocket(
     @EventListener
     fun onEvent(event: GameUpdated) =
         activeListeners.getOrDefault(event.game.id, emptyList())
-            .forEach { session ->
-                with(event.game) {
-                    session.sendV1(
-                        GameUpdatedMessage(
-                            id.id,
-                            host.id,
-                            state,
-                            participants.map { (playerId, meta) ->
-                                GameUpdatedMessage.PlayerMeta(
-                                    playerId.id,
-                                    meta.player.name,
-                                    meta.adapter.protocolVersion.id,
-                                    meta.adapter.version,
-                                    meta.adapter.connectedHost,
-                                    meta.adapter.gpgnetState,
-                                    meta.adapter.gameState,
-                                    listOf()
-                                )
-                            }.associateBy { it.playerId }
-                        )
-                    )
-                }
-            }
+            .forEach { it.sendV1(UpdateGame.fromGame(event.game)) }
 
     @EventListener
     fun onEvent(event: CoturnListUpdated) =
@@ -167,5 +148,4 @@ class UiWebSocket(
                     )
                 )
             }
-
 }

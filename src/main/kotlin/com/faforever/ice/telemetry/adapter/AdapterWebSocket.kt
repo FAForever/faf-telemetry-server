@@ -1,5 +1,7 @@
 package com.faforever.ice.telemetry
 
+import com.faforever.ice.telemetry.adapter.protocol.v1.ConnectToPeer
+import com.faforever.ice.telemetry.adapter.protocol.v1.DisconnectFromPeer
 import com.faforever.ice.telemetry.adapter.protocol.v1.ErrorCode
 import com.faforever.ice.telemetry.adapter.protocol.v1.GeneralError
 import com.faforever.ice.telemetry.adapter.protocol.v1.IncomingMessageV1
@@ -9,12 +11,18 @@ import com.faforever.ice.telemetry.adapter.protocol.v1.RegisterAsPeer
 import com.faforever.ice.telemetry.adapter.protocol.v1.UpdateCoturnList
 import com.faforever.ice.telemetry.adapter.protocol.v1.UpdateGameState
 import com.faforever.ice.telemetry.adapter.protocol.v1.UpdateGpgnetState
+import com.faforever.ice.telemetry.adapter.protocol.v1.UpdatePeerConnectivity
+import com.faforever.ice.telemetry.adapter.protocol.v1.UpdatePeerState
+import com.faforever.ice.telemetry.domain.AdapterConnected
 import com.faforever.ice.telemetry.domain.CoturnListUpdated
 import com.faforever.ice.telemetry.domain.CoturnServer
 import com.faforever.ice.telemetry.domain.GameId
 import com.faforever.ice.telemetry.domain.GameStateUpdated
 import com.faforever.ice.telemetry.domain.GpgnetStateUpdated
 import com.faforever.ice.telemetry.domain.PeerConnected
+import com.faforever.ice.telemetry.domain.PeerConnectivityUpdated
+import com.faforever.ice.telemetry.domain.PeerDisconnected
+import com.faforever.ice.telemetry.domain.PeerStateUpdated
 import com.faforever.ice.telemetry.domain.PlayerId
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.micronaut.context.event.ApplicationEventPublisher
@@ -84,7 +92,7 @@ class AdapterServerWebSocket(
         when (message) {
             is RegisterAsPeer -> {
                 applicationEventPublisher.publishEventAsync(
-                    PeerConnected(
+                    AdapterConnected(
                         gameId,
                         message.adapterVersion,
                         ProtocolVersion(1),
@@ -129,6 +137,53 @@ class AdapterServerWebSocket(
                         gameId,
                         playerId,
                         message.newState,
+                    )
+                )
+            }
+
+            is ConnectToPeer -> {
+                applicationEventPublisher.publishEventAsync(
+                    PeerConnected(
+                        gameId,
+                        playerId,
+                        PlayerId(message.peerPlayerId),
+                        message.peerName,
+                        message.localOffer
+                    )
+                )
+            }
+
+            is DisconnectFromPeer -> {
+                applicationEventPublisher.publishEventAsync(
+                    PeerDisconnected(
+                        gameId,
+                        playerId,
+                        PlayerId(message.peerPlayerId)
+                    )
+                )
+            }
+
+            is UpdatePeerState -> {
+                applicationEventPublisher.publishEventAsync(
+                    PeerStateUpdated(
+                        gameId,
+                        playerId,
+                        PlayerId(message.peerPlayerId),
+                        message.iceState,
+                        message.localCandidate,
+                        message.remoteCandidate,
+                    )
+                )
+            }
+
+            is UpdatePeerConnectivity -> {
+                applicationEventPublisher.publishEventAsync(
+                    PeerConnectivityUpdated(
+                        gameId,
+                        playerId,
+                        PlayerId(message.peerPlayerId),
+                        message.averageRTT,
+                        message.lastReceived,
                     )
                 )
             }
