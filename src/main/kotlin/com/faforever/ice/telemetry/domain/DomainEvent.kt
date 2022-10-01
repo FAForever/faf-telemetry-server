@@ -2,6 +2,7 @@ package com.faforever.ice.telemetry.domain
 
 import com.faforever.ice.telemetry.ProtocolVersion
 import com.faforever.ice.telemetry.SessionId
+import com.faforever.ice.telemetry.ui.OutgoingUiMessage
 import org.ice4j.ice.CandidateType
 import java.time.Instant
 
@@ -16,6 +17,16 @@ data class AdapterConnected(
     val sessionId: SessionId,
 ) : DomainEvent
 
+data class AdapterInfoUpdated(
+    val gameId: GameId,
+    val playerId: PlayerId,
+    val adapterVersion: String,
+    val protocolVersion: ProtocolVersion,
+    val playerName: String,
+    val connectedHost: String?,
+    val gpgnetState: GpgnetState,
+    val gameState: Game.State,
+) : OutgoingUiMessage
 
 data class GameUpdated(val game: Game) : DomainEvent
 
@@ -30,13 +41,13 @@ data class CoturnListUpdated(
 data class GameStateUpdated(
     val gameId: GameId,
     val playerId: PlayerId,
-    val newGameState: Game.State,
+    val newState: Game.State,
 ) : DomainEvent
 
 data class GpgnetStateUpdated(
     val gameId: GameId,
     val playerId: PlayerId,
-    val newGameState: GpgnetState,
+    val newState: GpgnetState,
 ) : DomainEvent
 
 data class PeerConnected(

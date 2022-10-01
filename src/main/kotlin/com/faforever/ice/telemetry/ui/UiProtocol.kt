@@ -11,7 +11,7 @@ import java.time.Instant
 interface OutgoingUiMessage {
 }
 
-data class AdapterInfoMessage(
+data class UpdateAdapterInfo(
     val gameId: Int,
     val playerId: Int,
     val version: String,
@@ -25,7 +25,7 @@ data class AdapterInfoMessage(
 data class UpdateGame(
     val gameId: Int,
     val hostPlayerId: Int,
-    val state: Game.State,
+    val gameState: Game.State,
     val participants: List<PlayerMeta>,
 ) : OutgoingUiMessage {
     companion object {

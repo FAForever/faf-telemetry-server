@@ -16,8 +16,8 @@ import java.util.UUID
     Type(value = ConnectToPeer::class, name = "ConnectToPeer"),
     Type(value = DisconnectFromPeer::class, name = "DisconnectFromPeer"),
     Type(value = UpdatePeerState::class, name = "UpdatePeerState"),
-    Type(value = UpdatePeerConnectivity::class, name = "PeerConnectivityUpdate"),
-    Type(value = UpdateGameState::class, name = "UpdateGameChange"),
+    Type(value = UpdatePeerConnectivity::class, name = "UpdatePeerConnectivity"),
+    Type(value = UpdateGameState::class, name = "UpdateGameState"),
     Type(value = UpdateGpgnetState::class, name = "UpdateGpgnetState"),
     Type(value = UpdateCoturnList::class, name = "UpdateCoturnList"),
 )

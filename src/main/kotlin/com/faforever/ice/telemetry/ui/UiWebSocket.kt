@@ -3,11 +3,13 @@ package com.faforever.ice.telemetry.ui
 
 import com.faforever.ice.telemetry.GameService
 import com.faforever.ice.telemetry.domain.AdapterConnected
+import com.faforever.ice.telemetry.domain.AdapterInfoUpdated
 import com.faforever.ice.telemetry.domain.CoturnListUpdated
 import com.faforever.ice.telemetry.domain.Game
 import com.faforever.ice.telemetry.domain.GameId
 import com.faforever.ice.telemetry.domain.GameUpdated
 import com.faforever.ice.telemetry.domain.GpgnetState
+import com.faforever.ice.telemetry.domain.GpgnetStateUpdated
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.websocket.CloseReason
@@ -44,7 +46,7 @@ class UiWebSocket(
         val game = gameService.getGame(gameId) ?: return
         game.participants.values.forEach { playerConnection ->
             session.sendV1(
-                AdapterInfoMessage(
+                UpdateAdapterInfo(
                     gameId.id,
                     playerConnection.player.id.id,
                     playerConnection.adapter.version,
@@ -111,7 +113,7 @@ class UiWebSocket(
         activeListeners.getOrDefault(event.gameId, emptyList())
             .forEach { session ->
                 session.sendV1(
-                    AdapterInfoMessage(
+                    UpdateAdapterInfo(
                         event.gameId.id,
                         event.playerId.id,
                         event.adapterVersion,
@@ -120,6 +122,23 @@ class UiWebSocket(
                         null,
                         GpgnetState.OFFLINE,
                         Game.State.NONE,
+                    )
+                )
+            }
+    @EventListener
+    fun onEvent(event: AdapterInfoUpdated) =
+        activeListeners.getOrDefault(event.gameId, emptyList())
+            .forEach { session ->
+                session.sendV1(
+                    UpdateAdapterInfo(
+                        event.gameId.id,
+                        event.playerId.id,
+                        event.adapterVersion,
+                        event.protocolVersion.id,
+                        event.playerName,
+                        event.connectedHost,
+                        event.gpgnetState,
+                        event.gameState,
                     )
                 )
             }

@@ -2,12 +2,14 @@ package com.faforever.ice.telemetry
 
 import com.faforever.ice.telemetry.domain.Adapter
 import com.faforever.ice.telemetry.domain.AdapterConnected
+import com.faforever.ice.telemetry.domain.AdapterInfoUpdated
 import com.faforever.ice.telemetry.domain.CoturnListUpdated
 import com.faforever.ice.telemetry.domain.Game
 import com.faforever.ice.telemetry.domain.GameId
 import com.faforever.ice.telemetry.domain.GameStateUpdated
 import com.faforever.ice.telemetry.domain.GameUpdated
 import com.faforever.ice.telemetry.domain.GpgnetState
+import com.faforever.ice.telemetry.domain.GpgnetStateUpdated
 import com.faforever.ice.telemetry.domain.IceState
 import com.faforever.ice.telemetry.domain.PeerConnected
 import com.faforever.ice.telemetry.domain.PeerConnectivityUpdated
@@ -17,6 +19,7 @@ import com.faforever.ice.telemetry.domain.Player
 import com.faforever.ice.telemetry.domain.PlayerConnection
 import com.faforever.ice.telemetry.domain.PlayerId
 import com.faforever.ice.telemetry.domain.PlayerMeta
+import com.faforever.ice.telemetry.ui.UpdateAdapterInfo
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.runtime.event.annotation.EventListener
 import jakarta.inject.Singleton
@@ -32,36 +35,36 @@ class GameService(
     private val log = LoggerFactory.getLogger(javaClass)
     private val activeGames: MutableMap<GameId, Game> = ConcurrentHashMap()
 
-    init {
-        log.info("Instantiating demo game 4711")
-        activeGames[GameId(4711)] = Game(
-            GameId(4711), PlayerId(5000), Game.State.LAUNCHING, mutableMapOf(
-                PlayerId(5000) to PlayerMeta(
-                    Player(PlayerId(5000), "Brutus5000"), Adapter(
-                        "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
-                    ),
-                    listOf(),
-                    listOf(
-                        PlayerConnection(Player(PlayerId(666), "RedDevil"), IceState.CHECKING)
-                    )
-                ),
-                PlayerId(666) to PlayerMeta(
-                    Player(PlayerId(666), "RedDevil"), Adapter(
-                        "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
-                    ),
-                    listOf(),
-                    listOf(
-                        PlayerConnection(
-                            Player(PlayerId(5000), "RedDevil"),
-                            IceState.CONNECTED,
-                            CandidateType.LOCAL_CANDIDATE,
-                            CandidateType.RELAYED_CANDIDATE
-                        )
-                    )
-                )
-            )
-        )
-    }
+//    init {
+//        log.info("Instantiating demo game 4711")
+//        activeGames[GameId(4711)] = Game(
+//            GameId(4711), PlayerId(5000), Game.State.LAUNCHING, mutableMapOf(
+//                PlayerId(5000) to PlayerMeta(
+//                    Player(PlayerId(5000), "Brutus5000"), Adapter(
+//                        "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
+//                    ),
+//                    listOf(),
+//                    listOf(
+//                        PlayerConnection(Player(PlayerId(666), "RedDevil"), IceState.CHECKING)
+//                    )
+//                ),
+//                PlayerId(666) to PlayerMeta(
+//                    Player(PlayerId(666), "RedDevil"), Adapter(
+//                        "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
+//                    ),
+//                    listOf(),
+//                    listOf(
+//                        PlayerConnection(
+//                            Player(PlayerId(5000), "RedDevil"),
+//                            IceState.CONNECTED,
+//                            CandidateType.LOCAL_CANDIDATE,
+//                            CandidateType.RELAYED_CANDIDATE
+//                        )
+//                    )
+//                )
+//            )
+//        )
+//    }
 
     fun getGame(gameId: GameId) = activeGames[gameId]
 
@@ -89,6 +92,29 @@ class GameService(
     }
 
     @EventListener
+    fun onEvent(event: GpgnetStateUpdated) {
+        val game = activeGames[event.gameId] ?: return
+        val participant = game.participants[event.playerId]
+            ?.let { it.copy(adapter = it.adapter.copy(gpgnetState = event.newState)) }
+            ?: return
+
+        game.participants[event.playerId] = participant
+
+        applicationEventPublisher.publishEventAsync(
+            AdapterInfoUpdated(
+                event.gameId,
+                event.playerId,
+                participant.adapter.version,
+                participant.adapter.protocolVersion,
+                participant.player.name,
+                participant.adapter.connectedHost,
+                participant.adapter.gpgnetState,
+                participant.adapter.gameState,
+            )
+        )
+    }
+
+    @EventListener
     fun onEvent(event: CoturnListUpdated) {
         val game = activeGames[event.gameId] ?: return
         val participant = game.participants[event.playerId] ?: return
@@ -100,14 +126,16 @@ class GameService(
         val game = activeGames[event.gameId] ?: return
         val participant = game.participants[event.playerId] ?: return
         game.participants[event.playerId] = participant.copy(
-            adapter = participant.adapter.copy(gameState = event.newGameState)
+            adapter = participant.adapter.copy(gameState = event.newState)
         )
 
-        if (game.host == event.playerId) {
-            activeGames[event.gameId] = game.copy(state = event.newGameState)
-        }
+        val newGame = if (game.host == event.playerId) {
+            game.copy(state = event.newState)
+        } else game
 
-        applicationEventPublisher.publishEventAsync(GameUpdated(game))
+        activeGames[event.gameId] = newGame
+
+        applicationEventPublisher.publishEventAsync(GameUpdated(newGame))
     }
 
     @EventListener

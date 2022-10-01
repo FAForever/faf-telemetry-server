@@ -74,7 +74,7 @@ if (isValid) {
             case "Error":
                 console.log(`Error on Websocket: ${JSON.stringify(message)}`);
                 return;
-            case "AdapterInfoMessage":
+            case "UpdateAdapterInfo":
                 console.log(`AdapterMessage: ${JSON.stringify(message)}`);
 
                 document.body.classList.remove("loading")
@@ -88,7 +88,7 @@ if (isValid) {
                         case "OFFLINE":
                             return "danger";
                         case "WAITING_FOR_GAME":
-                            return "warn";
+                            return "warning";
                         case "GAME_CONNECTED":
                             return "success";
                     }
@@ -144,7 +144,6 @@ if (isValid) {
                         }
                     })
                 }
-
                 const table = document.getElementById("connection-table")
                 table.innerHTML = ""; // delete all rows
 
