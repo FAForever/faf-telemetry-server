@@ -79,6 +79,30 @@
                     <faf-var id="coturnHost">coturn-eu-1.supcomhub.org</faf-var>
                 </sl-badge>
 
+                <table>
+                    <tr>
+                        <td>
+
+                            <style>
+                                sl-card::part(body),
+                                sl-card::part(footer) {
+                                    padding: 0.5rem;
+                                }
+
+                                .card-footer {
+                                    max-width: 300px;
+                                }
+
+                                .card-footer [slot='footer'] {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                }
+                            </style>
+                        </td>
+                    </tr>
+                </table>
+
                 <table id="connection-table">
                 </table>
             </sl-details>
@@ -211,7 +235,7 @@
                     straight line at the speed of light (200000 km/s) a packet still requires at least 65ms,
                     making it an additional 130ms. The real world round trip time is much worse of course.</p>
                 <p><i>This is the reason why people had issues with Oceanian players. As long as only 1 player comes
-                    from Ocenian and the rest is European, the roundtrip only adds up once. But if 2 Ocenian players
+                    from Oceanian and the rest is European, the roundtrip only adds up once. But if 2 Oceanian players
                     join it adds up twice, the game will most probably lag.</i></p>
                 <p>If we now set up an additional coturn server in Australia, Alice and Bobs round trip time is reduced
                     massively, therefore reducing lag issues for all players.</p>

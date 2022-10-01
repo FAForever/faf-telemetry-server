@@ -1,3 +1,74 @@
+function formatCandidateType(name) {
+    switch (name) {
+        case "PEER_REFLEXIVE_CANDIDATE":
+            return "prflx"
+        case "SERVER_REFLEXIVE_CANDIDATE":
+            return "srflx"
+        case "RELAYED_CANDIDATE":
+            return "relay"
+        case "HOST_CANDIDATE":
+            return "host"
+        case "LOCAL_CANDIDATE":
+            return "local"
+        case "STUN_CANDIDATE":
+            return "stun"
+    }
+}
+
+function buildConnectionCard(iceState, localCandidateType, remoteCandidateType, averageRTT, lastReceived) {
+    const displayCandidateTypes = (localCandidateType != undefined && remoteCandidateType != undefined) ? "flex" : "none";
+    const displayPing = averageRTT != undefined ? "" : "display: none; "
+    const displayLastReceived = lastReceived != undefined ? "" : "display: none; "
+
+    if(lastReceived) {
+        lastReceived = Math.round((Date.now() - new Date(lastReceived)) / 100.00) / 10.0
+    }
+
+    let iceStateColor
+
+    switch (iceState) {
+        case "NEW":
+        case "GATHERING":
+        case "AWAITING_CANDIDATES":
+        case "CHECKING":
+            iceStateColor = "--sl-color-warning-300"
+            break;
+        case "CONNECTED":
+        case "COMPLETED":
+            iceStateColor = "--sl-color-success-300"
+            break;
+        case "DISCONNECTED":
+            iceStateColor = "--sl-color-neutral-300"
+            break;
+    }
+
+    iceState = iceState.toLowerCase().replace("_", " ")
+
+    return `
+    <sl-card class="card-footer">
+        <div style="text-align: center;
+                    font-size: var(--sl-font-size-small);
+                    font-family: var(--sl-font-sans);
+                    background-color: var(${iceStateColor});
+                    padding: 0 1ch;">
+            ${iceState}
+        </div>
+        
+        <div style="display: ${displayCandidateTypes}; align-items: center; justify-content: center">
+            <sl-badge variant="primary">${formatCandidateType(localCandidateType)}</sl-badge>
+            <sl-icon name="arrow-right"></sl-icon>
+            <sl-badge variant="primary">${formatCandidateType(remoteCandidateType)}</sl-badge>
+        </div>
+    
+        <div>
+            <sl-badge variant="success" pill style="font-size: var(--sl-font-size-2x-small); ${displayPing}">${averageRTT}ms</sl-badge>
+            <sl-badge variant="neutral" pill style="font-size: var(--sl-font-size-2x-small); ${displayLastReceived}">${lastReceived}s ago</sl-badge>
+        </div>
+    </sl-card>
+`
+}
+
+
 function setVariable(id, value, pillVariantSelector) {
     const varElement = document.getElementById(id)
     varElement.innerText = value
@@ -181,7 +252,9 @@ if (isValid) {
                     if (p.connections) {
                         for (const con of p.connections) {
                             const conIndex = participantsIndexById[con.playerId]
-                            participantRow.cells[conIndex].innerHTML = `${con.localCandidate} -> ${con.remoteCandidate}`
+                            const cardHtml = buildConnectionCard(con.state, con.localCandidate, con.remoteCandidate,
+                                con.averageRTT, con.lastReceived)
+                            participantRow.cells[conIndex].innerHTML = cardHtml
                         }
                     }
 

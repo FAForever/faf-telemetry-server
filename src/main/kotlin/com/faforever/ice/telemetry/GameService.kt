@@ -35,36 +35,38 @@ class GameService(
     private val log = LoggerFactory.getLogger(javaClass)
     private val activeGames: MutableMap<GameId, Game> = ConcurrentHashMap()
 
-//    init {
-//        log.info("Instantiating demo game 4711")
-//        activeGames[GameId(4711)] = Game(
-//            GameId(4711), PlayerId(5000), Game.State.LAUNCHING, mutableMapOf(
-//                PlayerId(5000) to PlayerMeta(
-//                    Player(PlayerId(5000), "Brutus5000"), Adapter(
-//                        "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
-//                    ),
-//                    listOf(),
-//                    listOf(
-//                        PlayerConnection(Player(PlayerId(666), "RedDevil"), IceState.CHECKING)
-//                    )
-//                ),
-//                PlayerId(666) to PlayerMeta(
-//                    Player(PlayerId(666), "RedDevil"), Adapter(
-//                        "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
-//                    ),
-//                    listOf(),
-//                    listOf(
-//                        PlayerConnection(
-//                            Player(PlayerId(5000), "RedDevil"),
-//                            IceState.CONNECTED,
-//                            CandidateType.LOCAL_CANDIDATE,
-//                            CandidateType.RELAYED_CANDIDATE
-//                        )
-//                    )
-//                )
-//            )
-//        )
-//    }
+    init {
+        log.info("Instantiating demo game 4711")
+        activeGames[GameId(4711)] = Game(
+            GameId(4711), PlayerId(5000), Game.State.LAUNCHING, mutableMapOf(
+                PlayerId(5000) to PlayerMeta(
+                    Player(PlayerId(5000), "Brutus5000"), Adapter(
+                        "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
+                    ),
+                    listOf(),
+                    listOf(
+                        PlayerConnection(Player(PlayerId(666), "RedDevil"), IceState.CHECKING)
+                    )
+                ),
+                PlayerId(666) to PlayerMeta(
+                    Player(PlayerId(666), "RedDevil"), Adapter(
+                        "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
+                    ),
+                    listOf(),
+                    listOf(
+                        PlayerConnection(
+                            Player(PlayerId(5000), "RedDevil"),
+                            IceState.CONNECTED,
+                            CandidateType.LOCAL_CANDIDATE,
+                            CandidateType.RELAYED_CANDIDATE,
+                            47.11,
+                            Instant.now()
+                        )
+                    )
+                )
+            )
+        )
+    }
 
     fun getGame(gameId: GameId) = activeGames[gameId]
 
