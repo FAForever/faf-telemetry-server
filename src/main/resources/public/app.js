@@ -78,13 +78,13 @@ function buildConnectionCard(iceState, localCandidateType, remoteCandidateType, 
                     padding: 0 1ch;">
             ${iceState}
         </div>
-        
+
         <div style="display: flex; align-items: center; justify-content: center">
             <sl-badge variant="primary">${formatCandidateType(localCandidateType)}</sl-badge>
             <sl-icon name="arrow-right"></sl-icon>
             <sl-badge variant="primary">${formatCandidateType(remoteCandidateType)}</sl-badge>
         </div>
-    
+
         <div style="display: flex; align-items: center; justify-content: center">
             <sl-tooltip content="Average roundtrip time (aka Ping)">
                 <sl-badge variant="${averageRttStyle}" pill style="font-size: var(--sl-font-size-2x-small)">
@@ -150,12 +150,13 @@ const params = new Proxy(new URLSearchParams(window.location.search), {
 
 const gameId = parseInt(params.gameId)
 const playerId = parseInt(params.playerId)
+let wsHost = params.wsHost != undefined ? params.wsHost : location.origin.replace(/^http/, 'ws')
 const isValid = (!!gameId) && (!!playerId)
 
 console.log(`Launched application with gameId=${gameId}, playerId=${playerId}, isValid=${isValid}`);
 
 if (isValid) {
-    const telemetrySocket = new WebSocket(`ws://localhost:8080/ui/game/${gameId}`);
+    const telemetrySocket = new WebSocket(`${wsHost}/ui/game/${gameId}`);
     telemetrySocket.onopen = event => {
         console.log("Telemetry socket opened");
     }
