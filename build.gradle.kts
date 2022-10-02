@@ -32,8 +32,9 @@ dependencies {
 }
 
 application {
-    mainClass.set("com.faforever.ice.ApplicationKt")
+    mainClass.set("com.faforever.ice.telemetry.ApplicationKt")
 }
+
 java {
     sourceCompatibility = JavaVersion.VERSION_17
 }
