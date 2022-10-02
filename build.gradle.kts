@@ -1,7 +1,7 @@
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "1.7.10"
-    id("org.jetbrains.kotlin.kapt") version "1.7.10"
-    id("org.jetbrains.kotlin.plugin.allopen") version "1.7.10"
+    id("org.jetbrains.kotlin.jvm") version "1.7.20"
+    id("org.jetbrains.kotlin.kapt") version "1.7.20"
+    id("org.jetbrains.kotlin.plugin.allopen") version "1.7.20"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("io.micronaut.application") version "3.5.3"
 }
@@ -34,12 +34,13 @@ application {
     mainClass.set("com.faforever.ice.ApplicationKt")
 }
 java {
-    sourceCompatibility = JavaVersion.toVersion("17")
+    sourceCompatibility = JavaVersion.VERSION_17
 }
 
 tasks {
     compileKotlin {
         kotlinOptions {
+            freeCompilerArgs = listOf("-Xjsr305=strict")
             jvmTarget = "17"
         }
     }
