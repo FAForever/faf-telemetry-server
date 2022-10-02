@@ -1,1 +1,1 @@
-rootProject.name = "telemetry-server"
+rootProject.name = "faf-telemetry-server"
