@@ -72,6 +72,11 @@ table {
     margin: 0 auto;
 }
 
+table#connection-table td {
+    padding: 0;
+    border: none;
+}
+
 table.zebra tbody tr:nth-child(even) {
     background-color: var(--sl-color-neutral-100);
 }

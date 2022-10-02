@@ -1,5 +1,7 @@
 function formatCandidateType(name) {
     switch (name) {
+        case undefined:
+            return "?";
         case "PEER_REFLEXIVE_CANDIDATE":
             return "prflx"
         case "SERVER_REFLEXIVE_CANDIDATE":
@@ -16,12 +18,35 @@ function formatCandidateType(name) {
 }
 
 function buildConnectionCard(iceState, localCandidateType, remoteCandidateType, averageRTT, lastReceived) {
-    const displayCandidateTypes = (localCandidateType != undefined && remoteCandidateType != undefined) ? "flex" : "none";
-    const displayPing = averageRTT != undefined ? "" : "display: none; "
-    const displayLastReceived = lastReceived != undefined ? "" : "display: none; "
-
-    if(lastReceived) {
+    let lastReceivedText = "n/a"
+    let lastReceivedStyle = "neutral"
+    if (lastReceived) {
         lastReceived = Math.round((Date.now() - new Date(lastReceived)) / 100.00) / 10.0
+
+        if(lastReceived < 5) {
+            lastReceivedStyle = "success"
+        } else if(lastReceived < 30) {
+            lastReceivedStyle = "warning"
+        } else {
+            lastReceivedStyle = "danger"
+        }
+
+        lastReceivedText = lastReceived + "s ago"
+    }
+
+    let averageRttStyle = "neutral"
+    let averageRTTText = "n/a"
+    if(averageRTT) {
+
+        if(averageRTT < 100) {
+            averageRttStyle = "success"
+        } else if(averageRTT < 500) {
+            averageRttStyle = "warning"
+        } else {
+            averageRttStyle = "danger"
+        }
+
+        averageRTTText = Math.round(averageRTT * 10) / 10.0 + "ms"
     }
 
     let iceStateColor
@@ -45,7 +70,7 @@ function buildConnectionCard(iceState, localCandidateType, remoteCandidateType, 
     iceState = iceState.toLowerCase().replace("_", " ")
 
     return `
-    <sl-card class="card-footer">
+    <div>
         <div style="text-align: center;
                     font-size: var(--sl-font-size-small);
                     font-family: var(--sl-font-sans);
@@ -54,17 +79,25 @@ function buildConnectionCard(iceState, localCandidateType, remoteCandidateType, 
             ${iceState}
         </div>
         
-        <div style="display: ${displayCandidateTypes}; align-items: center; justify-content: center">
+        <div style="display: flex; align-items: center; justify-content: center">
             <sl-badge variant="primary">${formatCandidateType(localCandidateType)}</sl-badge>
             <sl-icon name="arrow-right"></sl-icon>
             <sl-badge variant="primary">${formatCandidateType(remoteCandidateType)}</sl-badge>
         </div>
     
-        <div>
-            <sl-badge variant="success" pill style="font-size: var(--sl-font-size-2x-small); ${displayPing}">${averageRTT}ms</sl-badge>
-            <sl-badge variant="neutral" pill style="font-size: var(--sl-font-size-2x-small); ${displayLastReceived}">${lastReceived}s ago</sl-badge>
+        <div style="display: flex; align-items: center; justify-content: center">
+            <sl-tooltip content="Average roundtrip time (aka Ping)">
+                <sl-badge variant="${averageRttStyle}" pill style="font-size: var(--sl-font-size-2x-small)">
+                    <sl-icon name="arrow-repeat"></sl-icon> ${averageRTTText}
+                </sl-badge>
+            </sl-tooltip>
+            <sl-tooltip content="Last message received">
+                <sl-badge variant="${lastReceivedStyle}" pill style="font-size: var(--sl-font-size-2x-small)">
+                    <sl-icon name="envelope"></sl-icon> ${lastReceivedText}
+                </sl-badge>
+            </sl-tooltip>
         </div>
-    </sl-card>
+    </div>
 `
 }
 
@@ -88,10 +121,7 @@ function escapeHtml(html) {
 // Custom function to emit toast notifications
 function notify(message, variant = 'primary', icon = 'info-circle', duration = 3000) {
     const alert = Object.assign(document.createElement('sl-alert'), {
-        variant,
-        closable: true,
-        duration: duration,
-        innerHTML: `
+        variant, closable: true, duration: duration, innerHTML: `
         <sl-icon name="${icon}" slot="icon"></sl-icon>
         ${escapeHtml(message)}
       `
@@ -104,9 +134,7 @@ function notify(message, variant = 'primary', icon = 'info-circle', duration = 3
 // Custom function to emit toast notifications
 function persistentError(message) {
     const alert = Object.assign(document.createElement('sl-alert'), {
-        variant: 'danger',
-        closable: false,
-        innerHTML: `
+        variant: 'danger', closable: false, innerHTML: `
         <sl-icon name="exclamation-octagon" slot="icon"></sl-icon>
         ${escapeHtml(message)}
       `
@@ -226,8 +254,7 @@ if (isValid) {
                 const participants = message.participants.map((p, index) => {
                     return {
                         // row index and column index
-                        index: index + 1,
-                        ...p
+                        index: index + 1, ...p
                     }
                 })
 
@@ -252,8 +279,7 @@ if (isValid) {
                     if (p.connections) {
                         for (const con of p.connections) {
                             const conIndex = participantsIndexById[con.playerId]
-                            const cardHtml = buildConnectionCard(con.state, con.localCandidate, con.remoteCandidate,
-                                con.averageRTT, con.lastReceived)
+                            const cardHtml = buildConnectionCard(con.state, con.localCandidate, con.remoteCandidate, con.averageRTT, con.lastReceived)
                             participantRow.cells[conIndex].innerHTML = cardHtml
                         }
                     }
