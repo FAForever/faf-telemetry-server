@@ -1,3 +1,5 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
 plugins {
     id("org.jetbrains.kotlin.jvm") version "1.7.20"
     id("org.jetbrains.kotlin.kapt") version "1.7.20"
@@ -47,6 +49,11 @@ tasks {
         kotlinOptions {
             jvmTarget = "17"
         }
+    }
+
+    named<DockerBuildImage>("dockerBuild") {
+        images.empty()
+        images.add("faforever/faf-telemetry-server")
     }
 }
 graalvmNative.toolchainDetection.set(false)
