@@ -1,7 +1,6 @@
 package com.faforever.ice.telemetry.domain
 
-import com.faforever.ice.telemetry.adapter.ProtocolVersion
-import java.time.Instant
+import com.faforever.ice.telemetry.adapter.protocol.v1.ProtocolVersion
 
 @JvmInline
 value class PlayerId(val id: Int)
@@ -18,27 +17,13 @@ data class PlayerMeta(
     val connections: List<PlayerConnection>,
 )
 
-
-
-
-data class Candidate(val networkAdapter: String)
-
-data class PeerConnection(
-    val adapterId: Int,
-    val createdAt: Instant,
-    val state: Unit,
-    val offeringPlayer: Player,
-    val offeringNetworkMode: Unit,
-    val remotePlayer: Player,
-    val remotePlayerNetworkMode: Unit,
-)
-
 data class Game(
     val id: GameId,
     val host: PlayerId,
     val state: State,
     val participants: MutableMap<PlayerId, PlayerMeta>
 ) {
+    @Suppress("unused")
     enum class State {
         NONE,
         IDLE,
@@ -56,6 +41,7 @@ data class Adapter(
     val gameState: Game.State,
 )
 
+@Suppress("unused")
 enum class GpgnetState {
     OFFLINE,
     WAITING_FOR_GAME,

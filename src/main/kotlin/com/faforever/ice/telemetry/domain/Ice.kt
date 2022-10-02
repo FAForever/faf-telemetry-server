@@ -12,6 +12,7 @@ data class PlayerConnection(
     val lastReceived: Instant? = null
 )
 
+@Suppress("unused")
 enum class IceState {
     NEW,
     GATHERING,

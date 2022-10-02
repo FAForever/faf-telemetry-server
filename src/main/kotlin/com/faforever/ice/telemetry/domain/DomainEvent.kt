@@ -1,12 +1,12 @@
 package com.faforever.ice.telemetry.domain
 
-import com.faforever.ice.telemetry.adapter.ProtocolVersion
-import com.faforever.ice.telemetry.adapter.SessionId
+import com.faforever.ice.telemetry.adapter.protocol.v1.ProtocolVersion
+import com.faforever.ice.telemetry.adapter.protocol.v1.SessionId
 import com.faforever.ice.telemetry.ui.OutgoingUiMessage
 import org.ice4j.ice.CandidateType
 import java.time.Instant
 
-sealed interface DomainEvent {}
+sealed interface DomainEvent
 
 data class AdapterConnected(
     val gameId: GameId,
@@ -31,11 +31,17 @@ data class AdapterInfoUpdated(
 data class GameUpdated(val game: Game) : DomainEvent
 
 data class CoturnServer(
-    val region: String, val host: String, val port: Int, val averageRTT: Double?
+    val region: String,
+    val host: String,
+    val port: Int,
+    val averageRTT: Double?
 )
 
 data class CoturnListUpdated(
-    val gameId: GameId, val playerId: PlayerId, val connectedHost: String, val knownServers: List<CoturnServer>
+    val gameId: GameId,
+    val playerId: PlayerId,
+    val connectedHost: String,
+    val knownServers: List<CoturnServer>
 ) : DomainEvent
 
 data class GameStateUpdated(

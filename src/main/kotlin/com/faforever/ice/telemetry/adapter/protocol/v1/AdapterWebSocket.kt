@@ -1,20 +1,7 @@
 @file:Suppress("NAME_SHADOWING")
 
-package com.faforever.ice.telemetry.adapter
+package com.faforever.ice.telemetry.adapter.protocol.v1
 
-import com.faforever.ice.telemetry.adapter.protocol.v1.ConnectToPeer
-import com.faforever.ice.telemetry.adapter.protocol.v1.DisconnectFromPeer
-import com.faforever.ice.telemetry.adapter.protocol.v1.ErrorCode
-import com.faforever.ice.telemetry.adapter.protocol.v1.GeneralError
-import com.faforever.ice.telemetry.adapter.protocol.v1.IncomingMessageV1
-import com.faforever.ice.telemetry.adapter.protocol.v1.OnlyIdMessage
-import com.faforever.ice.telemetry.adapter.protocol.v1.OutgoingMessageV1
-import com.faforever.ice.telemetry.adapter.protocol.v1.RegisterAsPeer
-import com.faforever.ice.telemetry.adapter.protocol.v1.UpdateCoturnList
-import com.faforever.ice.telemetry.adapter.protocol.v1.UpdateGameState
-import com.faforever.ice.telemetry.adapter.protocol.v1.UpdateGpgnetState
-import com.faforever.ice.telemetry.adapter.protocol.v1.UpdatePeerConnectivity
-import com.faforever.ice.telemetry.adapter.protocol.v1.UpdatePeerState
 import com.faforever.ice.telemetry.domain.AdapterConnected
 import com.faforever.ice.telemetry.domain.CoturnListUpdated
 import com.faforever.ice.telemetry.domain.CoturnServer
@@ -56,13 +43,17 @@ class AdapterServerWebSocket(
     fun onOpen(gameId: String, playerId: String, session: WebSocketSession) {
         log.info("Websocket opened session id $session.id [protocol=v1,gameId=$gameId]")
 
-        val gameId = (gameId.toIntOrNull() ?: return session.close(
-            CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
-        )).let { GameId(it) }
+        val gameId = (
+            gameId.toIntOrNull() ?: return session.close(
+                CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
+            )
+            ).let { GameId(it) }
 
-        val playerId = (playerId.toIntOrNull() ?: return session.close(
-            CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
-        )).let { PlayerId(it) }
+        val playerId = (
+            playerId.toIntOrNull() ?: return session.close(
+                CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
+            )
+            ).let { PlayerId(it) }
 
         gameSessions.getOrPut(gameId) { ConcurrentHashMap() }[playerId] = session
     }
@@ -190,7 +181,6 @@ class AdapterServerWebSocket(
                 )
             }
         }
-
     }
 
     private fun parseMessageOrRespondError(message: String, session: WebSocketSession): IncomingMessageV1? =

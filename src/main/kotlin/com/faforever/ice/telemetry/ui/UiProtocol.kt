@@ -6,11 +6,9 @@ import com.faforever.ice.telemetry.domain.IceState
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import org.ice4j.ice.CandidateType
 import java.time.Instant
-import java.time.format.DateTimeFormatter
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "messageType")
-interface OutgoingUiMessage {
-}
+interface OutgoingUiMessage
 
 data class UpdateAdapterInfo(
     val gameId: Int,
@@ -35,7 +33,7 @@ data class UpdateGame(
             game.host.id,
             game.state,
             game.participants.map { (_, meta) ->
-                UpdateGame.PlayerMeta(
+                PlayerMeta(
                     meta.player.id.id,
                     meta.player.name,
                     meta.adapter.protocolVersion.id,

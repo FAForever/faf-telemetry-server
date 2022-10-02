@@ -1,6 +1,6 @@
 package com.faforever.ice.telemetry
 
-import com.faforever.ice.telemetry.adapter.ProtocolVersion
+import com.faforever.ice.telemetry.adapter.protocol.v1.ProtocolVersion
 import com.faforever.ice.telemetry.domain.Adapter
 import com.faforever.ice.telemetry.domain.AdapterConnected
 import com.faforever.ice.telemetry.domain.AdapterInfoUpdated
@@ -38,9 +38,11 @@ class GameService(
     init {
         log.info("Instantiating demo game 4711")
         activeGames[GameId(4711)] = Game(
-            GameId(4711), PlayerId(5000), Game.State.LAUNCHING, mutableMapOf(
+            GameId(4711), PlayerId(5000), Game.State.LAUNCHING,
+            mutableMapOf(
                 PlayerId(5000) to PlayerMeta(
-                    Player(PlayerId(5000), "Brutus5000"), Adapter(
+                    Player(PlayerId(5000), "Brutus5000"),
+                    Adapter(
                         "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
                     ),
                     listOf(),
@@ -49,7 +51,8 @@ class GameService(
                     )
                 ),
                 PlayerId(666) to PlayerMeta(
-                    Player(PlayerId(666), "RedDevil"), Adapter(
+                    Player(PlayerId(666), "RedDevil"),
+                    Adapter(
                         "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
                     ),
                     listOf(),
@@ -69,7 +72,6 @@ class GameService(
     }
 
     fun getGame(gameId: GameId) = activeGames[gameId]
-
 
     @EventListener
     fun onEvent(event: AdapterConnected) {
@@ -212,5 +214,4 @@ class GameService(
 
         applicationEventPublisher.publishEventAsync(GameUpdated(game))
     }
-
 }

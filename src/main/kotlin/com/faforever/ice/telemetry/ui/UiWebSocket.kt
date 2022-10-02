@@ -2,7 +2,6 @@
 
 package com.faforever.ice.telemetry.ui
 
-
 import com.faforever.ice.telemetry.GameService
 import com.faforever.ice.telemetry.domain.AdapterConnected
 import com.faforever.ice.telemetry.domain.AdapterInfoUpdated
@@ -11,7 +10,6 @@ import com.faforever.ice.telemetry.domain.Game
 import com.faforever.ice.telemetry.domain.GameId
 import com.faforever.ice.telemetry.domain.GameUpdated
 import com.faforever.ice.telemetry.domain.GpgnetState
-import com.faforever.ice.telemetry.domain.GpgnetStateUpdated
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import io.micronaut.runtime.event.annotation.EventListener
@@ -34,16 +32,18 @@ class UiWebSocket(
     private val activeListeners: MutableMap<GameId, MutableList<WebSocketSession>> = ConcurrentHashMap()
 
     init {
-        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
     }
 
     @OnOpen
     fun onOpen(gameId: String, session: WebSocketSession) {
         log.info("Ui Websocket opened session id $session.id [gameId=$gameId]")
 
-        val gameId = (gameId.toIntOrNull() ?: return session.close(
-            CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
-        )).let { GameId(it) }
+        val gameId = (
+            gameId.toIntOrNull() ?: return session.close(
+                CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
+            )
+            ).let { GameId(it) }
 
         activeListeners.getOrPut(gameId) {
             Collections.synchronizedList(mutableListOf())
@@ -88,9 +88,11 @@ class UiWebSocket(
     fun onClose(gameId: String, session: WebSocketSession) {
         log.info("Ui Websocket closed session id $session.id [gameId=$gameId]")
 
-        val gameId = (gameId.toIntOrNull() ?: return session.close(
-            CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
-        )).let { GameId(it) }
+        val gameId = (
+            gameId.toIntOrNull() ?: return session.close(
+                CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
+            )
+            ).let { GameId(it) }
 
         activeListeners[gameId]?.remove(session)
 

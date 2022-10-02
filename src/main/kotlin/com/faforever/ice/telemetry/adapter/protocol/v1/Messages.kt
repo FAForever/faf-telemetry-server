@@ -108,5 +108,3 @@ data class UpdatePeerConnectivity(
     val averageRTT: Double?,
     val lastReceived: Instant?
 ) : IncomingMessageV1
-
-
