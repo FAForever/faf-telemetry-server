@@ -1,3 +1,5 @@
+@file:Suppress("NAME_SHADOWING")
+
 package com.faforever.ice.telemetry.ui
 
 
@@ -101,7 +103,7 @@ class UiWebSocket(
     }
 
     @OnMessage
-    fun onMessage(message: String, session: WebSocketSession) {
+    fun onMessage(message: String) {
         log.warn("Unexpected message from Ui Websocket: $message")
     }
 

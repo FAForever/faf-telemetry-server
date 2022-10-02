@@ -1,5 +1,6 @@
 package com.faforever.ice.telemetry
 
+import com.faforever.ice.telemetry.adapter.ProtocolVersion
 import com.faforever.ice.telemetry.domain.Adapter
 import com.faforever.ice.telemetry.domain.AdapterConnected
 import com.faforever.ice.telemetry.domain.AdapterInfoUpdated
@@ -19,7 +20,6 @@ import com.faforever.ice.telemetry.domain.Player
 import com.faforever.ice.telemetry.domain.PlayerConnection
 import com.faforever.ice.telemetry.domain.PlayerId
 import com.faforever.ice.telemetry.domain.PlayerMeta
-import com.faforever.ice.telemetry.ui.UpdateAdapterInfo
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.runtime.event.annotation.EventListener
 import jakarta.inject.Singleton
@@ -55,7 +55,7 @@ class GameService(
                     listOf(),
                     listOf(
                         PlayerConnection(
-                            Player(PlayerId(5000), "RedDevil"),
+                            Player(PlayerId(5000), "Brutus5000"),
                             IceState.CONNECTED,
                             CandidateType.LOCAL_CANDIDATE,
                             CandidateType.RELAYED_CANDIDATE,

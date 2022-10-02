@@ -1,7 +1,7 @@
 package com.faforever.ice.telemetry.domain
 
-import com.faforever.ice.telemetry.ProtocolVersion
-import com.faforever.ice.telemetry.SessionId
+import com.faforever.ice.telemetry.adapter.ProtocolVersion
+import com.faforever.ice.telemetry.adapter.SessionId
 import com.faforever.ice.telemetry.ui.OutgoingUiMessage
 import org.ice4j.ice.CandidateType
 import java.time.Instant

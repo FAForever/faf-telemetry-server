@@ -1,8 +1,6 @@
 package com.faforever.ice.telemetry.domain
 
-import com.faforever.ice.telemetry.ProtocolVersion
-import com.fasterxml.jackson.annotation.JsonProperty
-import org.ice4j.ice.CandidateType
+import com.faforever.ice.telemetry.adapter.ProtocolVersion
 import java.time.Instant
 
 @JvmInline

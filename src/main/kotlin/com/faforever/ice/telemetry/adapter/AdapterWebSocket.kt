@@ -1,4 +1,6 @@
-package com.faforever.ice.telemetry
+@file:Suppress("NAME_SHADOWING")
+
+package com.faforever.ice.telemetry.adapter
 
 import com.faforever.ice.telemetry.adapter.protocol.v1.ConnectToPeer
 import com.faforever.ice.telemetry.adapter.protocol.v1.DisconnectFromPeer
