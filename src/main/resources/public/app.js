@@ -254,38 +254,63 @@ if (isValid) {
                 const participantCount = message.participants.length
                 const participants = message.participants.map((p, index) => {
                     return {
-                        // row index and column index
-                        index: index + 1, ...p
+                        rowIndex: index + 1, ...p
                     }
                 })
-
                 const participantsIndexById = Object.fromEntries(participants.map(p => [p.playerId, p.index]))
+
+
+                // uniquely merge all participants and players in the connections (just id and name)
+                const players = [...new Map(
+                    message.participants.map(p => [p.playerId, {
+                        playerId: p.playerId,
+                        playerName: p.playerName,
+                    }]).concat(
+                        message.participants.flatMap(p => p.connections).map(c => [c.playerId, {
+                            playerId: c.playerId,
+                            playerName: c.playerName,
+                        }])
+                    )
+                ).values()]
+                    // and sort them by playerId
+                    .sort((p1,p2) => p1.playerId > p2.playerId)
+                    // and assign the column id
+                    .map((player, index) => ({
+                        columnIndex: index + 1, ...player
+                    }))
+
+                const columnOfPlayerId = Object.fromEntries(players.map(p => [p.playerId, p.columnIndex]))
 
                 const headerRow = table.insertRow(-1)
                 // One more column for the leading column
-                for (let i = 0; i <= participantCount; i++) {
-                    headerRow.insertCell(-1);
+                for (let i = 0; i <= players.length; i++) {
+                    const cell = headerRow.insertCell(-1);
+
+                    if(i > 0) {
+                        const p = players[i-1];
+                        headerRow.cells[p.columnIndex].innerHTML = p.playerName
+                    }
                 }
 
                 for (const p of participants) {
-                    headerRow.cells[p.index].innerHTML = p.playerName
 
                     const participantRow = table.insertRow(-1)
                     // One more column for the leading column
-                    for (let i = 0; i <= participantCount; i++) {
-                        participantRow.insertCell(-1);
+                    for (let i = 0; i <= players.length; i++) {
+                        const cell = participantRow.insertCell(-1);
+                        if(i > 0) {
+                            cell.innerHTML = players[i-1].playerId == p.playerId ? "self" : "n/a"
+                        }
                     }
 
                     participantRow.cells[0].innerHTML = p.playerName
                     if (p.connections) {
                         for (const con of p.connections) {
-                            const conIndex = participantsIndexById[con.playerId]
+                            const columnIndex = columnOfPlayerId[con.playerId]
                             const cardHtml = buildConnectionCard(con.state, con.localCandidate, con.remoteCandidate, con.averageRTT, con.lastReceived)
-                            participantRow.cells[conIndex].innerHTML = cardHtml
+                            participantRow.cells[columnIndex].innerHTML = cardHtml
                         }
                     }
-
-                    participantRow.cells[p.index].innerHTML = "-/-"
                 }
                 return;
             default:

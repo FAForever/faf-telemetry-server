@@ -1,0 +1,9 @@
+micronaut:
+  router:
+    static-resources:
+      default:
+        paths: "file:./src/main/resources/public"
+
+log:
+  level:
+    com.faforever: DEBUG

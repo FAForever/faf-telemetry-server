@@ -20,6 +20,7 @@ import com.faforever.ice.telemetry.domain.Player
 import com.faforever.ice.telemetry.domain.PlayerConnection
 import com.faforever.ice.telemetry.domain.PlayerId
 import com.faforever.ice.telemetry.domain.PlayerMeta
+import io.micronaut.context.ApplicationContext
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.runtime.event.annotation.EventListener
 import jakarta.inject.Singleton
@@ -30,45 +31,49 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Singleton
 class GameService(
-    private val applicationEventPublisher: ApplicationEventPublisher<Any>
+    private val applicationContext: ApplicationContext,
+    private val applicationEventPublisher: ApplicationEventPublisher<Any>,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private val activeGames: MutableMap<GameId, Game> = ConcurrentHashMap()
 
     init {
-        log.info("Instantiating demo game 4711")
-        activeGames[GameId(4711)] = Game(
-            GameId(4711), PlayerId(5000), Game.State.LAUNCHING,
-            mutableMapOf(
-                PlayerId(5000) to PlayerMeta(
-                    Player(PlayerId(5000), "Brutus5000"),
-                    Adapter(
-                        "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
+        if (applicationContext.environment.activeNames.contains("local")) {
+            log.info("Instantiating demo game 4711")
+            activeGames[GameId(4711)] = Game(
+                GameId(4711), PlayerId(5000), Game.State.LAUNCHING,
+                mutableMapOf(
+                    PlayerId(5000) to PlayerMeta(
+                        Player(PlayerId(5000), "Brutus5000"),
+                        Adapter(
+                            "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
+                        ),
+                        listOf(),
+                        listOf(
+                            PlayerConnection(Player(PlayerId(666), "RedDevil"), IceState.CHECKING),
+                            PlayerConnection(Player(PlayerId(667), "GreenDevil"), IceState.CHECKING),
+                        )
                     ),
-                    listOf(),
-                    listOf(
-                        PlayerConnection(Player(PlayerId(666), "RedDevil"), IceState.CHECKING)
-                    )
-                ),
-                PlayerId(666) to PlayerMeta(
-                    Player(PlayerId(666), "RedDevil"),
-                    Adapter(
-                        "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
-                    ),
-                    listOf(),
-                    listOf(
-                        PlayerConnection(
-                            Player(PlayerId(5000), "Brutus5000"),
-                            IceState.CONNECTED,
-                            CandidateType.LOCAL_CANDIDATE,
-                            CandidateType.RELAYED_CANDIDATE,
-                            47.11,
-                            Instant.now()
+                    PlayerId(666) to PlayerMeta(
+                        Player(PlayerId(666), "RedDevil"),
+                        Adapter(
+                            "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
+                        ),
+                        listOf(),
+                        listOf(
+                            PlayerConnection(
+                                Player(PlayerId(5000), "Brutus5000"),
+                                IceState.CONNECTED,
+                                CandidateType.LOCAL_CANDIDATE,
+                                CandidateType.RELAYED_CANDIDATE,
+                                47.11,
+                                Instant.now()
+                            )
                         )
                     )
                 )
             )
-        )
+        }
     }
 
     fun getGame(gameId: GameId) = activeGames[gameId]
