@@ -98,8 +98,8 @@ data class UpdatePeerState(
     val peerPlayerId: Int,
     val connected: Boolean,
     val iceState: IceState,
-    val localCandidate: CandidateType,
-    val remoteCandidate: CandidateType,
+    val localCandidate: CandidateType?,
+    val remoteCandidate: CandidateType?,
 ) : IncomingMessageV1
 
 data class UpdatePeerConnectivity(

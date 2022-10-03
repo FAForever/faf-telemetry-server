@@ -75,8 +75,8 @@ data class PeerStateUpdated(
     val playerId: PlayerId,
     val peerPlayerId: PlayerId,
     val iceState: IceState,
-    val localCandidate: CandidateType,
-    val remoteCandidate: CandidateType,
+    val localCandidate: CandidateType?,
+    val remoteCandidate: CandidateType?,
 )
 
 data class PeerConnectivityUpdated(
