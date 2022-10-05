@@ -21,17 +21,17 @@ function buildConnectionCard(iceState, localCandidateType, remoteCandidateType, 
     let lastReceivedText = "n/a"
     let lastReceivedStyle = "neutral"
     if (lastReceived) {
-        lastReceived = Math.round((Date.now() - new Date(lastReceived)) / 100.00) / 10.0
+        lastReceived = Math.round(Date.now() - new Date(lastReceived) / 1000.0)
 
-        if(lastReceived < 5) {
+        if(lastReceived < 1) {
             lastReceivedStyle = "success"
-        } else if(lastReceived < 30) {
+        } else if(lastReceived < 5) {
             lastReceivedStyle = "warning"
         } else {
             lastReceivedStyle = "danger"
         }
 
-        lastReceivedText = lastReceived + "s ago"
+        lastReceivedText = `<${lastReceived}s ago`
     }
 
     let averageRttStyle = "neutral"

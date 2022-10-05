@@ -208,8 +208,8 @@ class GameService(
             }
 
             connection.copy(
-                averageRTT = null,
-                lastReceived = Instant.now(),
+                averageRTT = connection.averageRTT,
+                lastReceived = connection.lastReceived,
             )
         }
 
