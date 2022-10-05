@@ -293,13 +293,16 @@ if (isValid) {
                 }
 
                 for (const p of participants) {
+                    if(p.playerId === playerId) {
+                        setVariable("coturnHost", p.connectedHost == null ? "n/a" : p.connectedHost)
+                    }
 
                     const participantRow = table.insertRow(-1)
                     // One more column for the leading column
                     for (let i = 0; i <= players.length; i++) {
                         const cell = participantRow.insertCell(-1);
                         if(i > 0) {
-                            cell.innerHTML = players[i-1].playerId == p.playerId ? "self" : "n/a"
+                            cell.innerHTML = players[i-1].playerId === p.playerId ? "self" : "n/a"
                         }
                     }
 
