@@ -208,8 +208,8 @@ class GameService(
             }
 
             connection.copy(
-                averageRTT = connection.averageRTT,
-                lastReceived = connection.lastReceived,
+                averageRTT = event.averageRTT,
+                lastReceived = event.lastReceived,
             )
         }
 
