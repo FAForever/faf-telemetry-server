@@ -20,14 +20,18 @@ import com.faforever.ice.telemetry.domain.Player
 import com.faforever.ice.telemetry.domain.PlayerConnection
 import com.faforever.ice.telemetry.domain.PlayerId
 import com.faforever.ice.telemetry.domain.PlayerMeta
+import com.faforever.ice.telemetry.domain.ScheduledConnectivityUpdate
+import com.faforever.ice.telemetry.ui.GameConnectivityUpdate
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.runtime.event.annotation.EventListener
+import io.micronaut.scheduling.annotation.Scheduled
 import jakarta.inject.Singleton
 import org.ice4j.ice.CandidateType
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.concurrent.fixedRateTimer
 
 @Singleton
 class GameService(
@@ -38,7 +42,7 @@ class GameService(
     private val activeGames: MutableMap<GameId, Game> = ConcurrentHashMap()
 
     init {
-        if (applicationContext.environment.activeNames.contains("local")) {
+        if (applicationContext.environment.activeNames.contains("demo")) {
             log.info("Instantiating demo game 4711")
             activeGames[GameId(4711)] = Game(
                 GameId(4711), PlayerId(5000), Game.State.LAUNCHING,
@@ -216,7 +220,25 @@ class GameService(
         game.participants[event.playerId] = participant.copy(
             connections = updatedConnections
         )
+    }
 
-        applicationEventPublisher.publishEventAsync(GameUpdated(game))
+    @Scheduled(fixedRate = "1s")
+    fun sendConnectivityUpdates() {
+        activeGames.values.forEach {game ->
+            val event = ScheduledConnectivityUpdate(
+                game.id,
+                game.participants.map { (playerId, meta) ->
+                    playerId to meta.connections.map { con ->
+                        ScheduledConnectivityUpdate.ConnectionState(
+                            con.remotePlayer.id,
+                            con.averageRTT,
+                            con.lastReceived,
+                        )
+                    }
+                }.toMap()
+            )
+
+            applicationEventPublisher.publishEventAsync(event)
+        }
     }
 }

@@ -60,7 +60,7 @@ class AdapterServerWebSocket(
 
     @OnClose
     fun onClose(gameId: Int, playerId: Int, session: WebSocketSession) {
-        log.info("Websocket closed session id $session.id [protocol=v1,gameId=$gameId]")
+        log.info("Adapter websocket closed session id $session.id [protocol=v1,gameId=$gameId]")
 
         val gameId = GameId(gameId)
         val playerId = PlayerId(playerId)

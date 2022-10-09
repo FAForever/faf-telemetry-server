@@ -1,75 +1,252 @@
-function formatCandidateType(name) {
-    switch (name) {
-        case undefined:
-            return "?";
-        case "PEER_REFLEXIVE_CANDIDATE":
-            return "prflx"
-        case "SERVER_REFLEXIVE_CANDIDATE":
-            return "srflx"
-        case "RELAYED_CANDIDATE":
-            return "relay"
-        case "HOST_CANDIDATE":
-            return "host"
-        case "LOCAL_CANDIDATE":
-            return "local"
-        case "STUN_CANDIDATE":
-            return "stun"
+/** @class State and rendering logic for the ICE adapter UI */
+class IceUI {
+    /**
+     * @param {number} gameId ID of the game to render
+     * @param {number} playerId ID of the player looking at the ui
+     */
+    constructor(gameId, playerId) {
+        this.gameId = gameId
+        this.playerId = playerId
+        this.playerName = "n/a"
+        this.adapterVersion = "n/a"
+        this.adapterProtocol = "n/a"
+        this.coturnHost = "n/a"
+        this.gpgnetState = "n/a"
+        this.gameState = "n/a"
+        // A participant is a player with an ice adapter connected to the telemetry server
+        this.participants = []
+        // A player is an active connection known by at least one participant
+        this.players = {}
+        this.coturnServers = []
     }
-}
 
-function buildConnectionCard(iceState, localCandidateType, remoteCandidateType, averageRTT, lastReceived) {
-    let lastReceivedText = "n/a"
-    let lastReceivedStyle = "neutral"
-    if (lastReceived) {
-        lastReceived = Math.round(Date.now() - new Date(lastReceived) / 1000.0)
+    onLoaded() {
+        document.body.classList.remove("loading")
+        document.body.classList.add("loaded")
+    }
 
-        if(lastReceived < 1) {
-            lastReceivedStyle = "success"
-        } else if(lastReceived < 5) {
-            lastReceivedStyle = "warning"
-        } else {
-            lastReceivedStyle = "danger"
+    setVariable(id, value, pillVariantSelector) {
+        const varElement = document.getElementById(id)
+        varElement.innerText = value
+
+        if (pillVariantSelector && varElement.parentElement.tagName === "SL-BADGE") {
+            varElement.parentElement.variant = pillVariantSelector(value)
+        }
+    }
+
+    setAdapterVersion(value) {
+        this.adapterVersion = value
+        this.setVariable("adapterVersion", this.adapterVersion)
+    }
+
+    setAdapterProtocol(value) {
+        this.adapterProtocol = value
+        this.setVariable("adapterProtocol", this.adapterProtocol)
+    }
+
+    setPlayerId(value) {
+        this.playerId = playerId
+        this.setVariable("playerId", this.playerId)
+    }
+
+    setPlayerName(value) {
+        this.playerName = value
+        this.setVariable("playerName", this.playerName)
+    }
+
+    setGpgnetState(value) {
+        this.gpgnetState = value
+
+        this.setVariable("gpgnetState", this.gpgnetState, newState => {
+            switch (newState) {
+                case "OFFLINE":
+                    return "danger";
+                case "WAITING_FOR_GAME":
+                    return "warning";
+                case "GAME_CONNECTED":
+                    return "success";
+            }
+        })
+    }
+
+    setGameState(value) {
+        this.gameState = value
+
+        this.setVariable("gameState", this.gameState, newState => {
+            switch (newState) {
+                case "NONE":
+                    return "danger";
+                default:
+                    return "primary";
+            }
+        })
+    }
+
+    setCoturnHost(value) {
+        this.coturnHost = value == null ? "n/a" : value
+
+        this.setVariable("coturnHost", this.coturnHost)
+    }
+
+    setCoturnServers(coturnServers) {
+        this.coturnServers = coturnServers
+
+        const coturnTable = document.getElementById("coturn-table")
+        const tbody = coturnTable.tBodies[0]
+
+        const rowsToDelete = tbody.rows.length; // keep the header!
+        for (let i = 0; i < rowsToDelete; i++) {
+            coturnTable.deleteRow(-1)
         }
 
-        lastReceivedText = `<${lastReceived}s ago`
+        if (this.coturnServers) {
+            for (let coturnServer of this.coturnServers) {
+                const newRow = tbody.insertRow()
+
+                const regionCol = newRow.insertCell(-1)
+                regionCol.innerHTML = coturnServer.region
+
+                const hostCol = newRow.insertCell(-1)
+                hostCol.innerHTML = coturnServer.host
+
+                const portCol = newRow.insertCell(-1)
+                portCol.innerHTML = coturnServer.port
+                portCol.className = 'numeric'
+
+                const averageRTTCol = newRow.insertCell(-1)
+                averageRTTCol.innerHTML = coturnServer.averageRTT == null ? "n/a" : coturnServer.averageRTT
+                averageRTTCol.className = 'numeric'
+            }
+        }
     }
 
-    let averageRttStyle = "neutral"
-    let averageRTTText = "n/a"
-    if(averageRTT) {
+    updateParticipants(participants) {
+        // potential changes are: new participant, removed participant, updated participant
+        // thus it's easier to throw away the old state
+        this.participants = participants
+            .sort((p1, p2) => p1.playerId > p2.playerId)
+            .map((p, index) => ({
+                    rowIndex: index + 1, ...p
+                })
+            )
 
-        if(averageRTT < 100) {
-            averageRttStyle = "success"
-        } else if(averageRTT < 500) {
-            averageRttStyle = "warning"
-        } else {
-            averageRttStyle = "danger"
+        // uniquely merge all participants and players in the connections (just id and name)
+        this.players = [...new Map(
+            this.participants.map(p => [p.playerId, {
+                playerId: p.playerId,
+                playerName: p.playerName,
+            }]).concat(
+                this.participants.flatMap(p => p.connections).map(c => [c.playerId, {
+                    playerId: c.playerId,
+                    playerName: c.playerName,
+                }])
+            )
+        ).values()]
+            // and sort them by playerId
+            .sort((p1, p2) => p1.playerId > p2.playerId)
+            // and assign the column id
+            .map((player, index) => ({
+                columnIndex: index + 1, ...player
+            }))
+
+        this.renderParticipantTable()
+    }
+
+    renderParticipantTable() {
+
+        const columnOfPlayerId = Object.fromEntries(this.players.map(p => [p.playerId, p.columnIndex]))
+
+        const table = document.getElementById("connection-table")
+        table.innerHTML = ""; // delete all rows
+        const headerRow = table.insertRow(-1)
+        // One more column for the leading column
+        for (let i = 0; i <= this.players.length; i++) {
+            const cell = headerRow.insertCell(-1);
+
+            if (i > 0) {
+                const p = this.players[i - 1];
+                headerRow.cells[p.columnIndex].innerHTML = p.playerName
+            }
         }
 
-        averageRTTText = Math.round(averageRTT * 10) / 10.0 + "ms"
+        for (const p of this.participants) {
+            if (p.playerId === playerId) {
+                this.setVariable("coturnHost", p.connectedHost == null ? "n/a" : p.connectedHost)
+            }
+
+            const participantRow = table.insertRow(-1)
+            // One more column for the leading column
+            for (let i = 0; i <= this.players.length; i++) {
+                const cell = participantRow.insertCell(-1);
+                if (i > 0) {
+                    cell.innerHTML = this.players[i - 1].playerId === p.playerId ? "self" : "n/a"
+                }
+            }
+
+            participantRow.cells[0].innerHTML = p.playerName
+            if (p.connections) {
+                for (const con of p.connections) {
+                    const columnIndex = columnOfPlayerId[con.playerId]
+                    const cardHtml = this.buildConnectionCard(con.state, con.localCandidate, con.remoteCandidate, con.averageRTT, con.lastReceived)
+                    participantRow.cells[columnIndex].innerHTML = cardHtml
+                }
+            }
+        }
     }
 
-    let iceStateColor
+    buildConnectionCard(iceState, localCandidateType, remoteCandidateType, averageRTT, lastReceived) {
+        let lastReceivedText = "n/a"
+        let lastReceivedStyle = "neutral"
+        if (lastReceived) {
+            lastReceived = Math.round(Date.now() - new Date(lastReceived) / 1000.0)
 
-    switch (iceState) {
-        case "NEW":
-        case "GATHERING":
-        case "AWAITING_CANDIDATES":
-        case "CHECKING":
-            iceStateColor = "--sl-color-warning-300"
-            break;
-        case "CONNECTED":
-        case "COMPLETED":
-            iceStateColor = "--sl-color-success-300"
-            break;
-        case "DISCONNECTED":
-            iceStateColor = "--sl-color-neutral-300"
-            break;
-    }
+            if (lastReceived < 1) {
+                lastReceivedStyle = "success"
+            } else if (lastReceived < 5) {
+                lastReceivedStyle = "warning"
+            } else {
+                lastReceivedStyle = "danger"
+            }
 
-    iceState = iceState.toLowerCase().replace("_", " ")
+            lastReceivedText = `<${lastReceived}s ago`
+        }
 
-    return `
+        let averageRttStyle = "neutral"
+        let averageRTTText = "n/a"
+        if (averageRTT) {
+
+            if (averageRTT < 100) {
+                averageRttStyle = "success"
+            } else if (averageRTT < 500) {
+                averageRttStyle = "warning"
+            } else {
+                averageRttStyle = "danger"
+            }
+
+            averageRTTText = Math.round(averageRTT * 10) / 10.0 + "ms"
+        }
+
+        let iceStateColor
+
+        switch (iceState) {
+            case "NEW":
+            case "GATHERING":
+            case "AWAITING_CANDIDATES":
+            case "CHECKING":
+                iceStateColor = "--sl-color-warning-300"
+                break;
+            case "CONNECTED":
+            case "COMPLETED":
+                iceStateColor = "--sl-color-success-300"
+                break;
+            case "DISCONNECTED":
+                iceStateColor = "--sl-color-neutral-300"
+                break;
+        }
+
+        iceState = iceState.toLowerCase().replace("_", " ")
+
+        return `
     <div>
         <div style="text-align: center;
                     font-size: var(--sl-font-size-small);
@@ -99,15 +276,26 @@ function buildConnectionCard(iceState, localCandidateType, remoteCandidateType, 
         </div>
     </div>
 `
+    }
+
 }
 
-
-function setVariable(id, value, pillVariantSelector) {
-    const varElement = document.getElementById(id)
-    varElement.innerText = value
-
-    if (pillVariantSelector && varElement.parentElement.tagName === "SL-BADGE") {
-        varElement.parentElement.variant = pillVariantSelector(value)
+function formatCandidateType(name) {
+    switch (name) {
+        case undefined:
+            return "?";
+        case "PEER_REFLEXIVE_CANDIDATE":
+            return "prflx"
+        case "SERVER_REFLEXIVE_CANDIDATE":
+            return "srflx"
+        case "RELAYED_CANDIDATE":
+            return "relay"
+        case "HOST_CANDIDATE":
+            return "host"
+        case "LOCAL_CANDIDATE":
+            return "local"
+        case "STUN_CANDIDATE":
+            return "stun"
     }
 }
 
@@ -156,6 +344,8 @@ const isValid = (!!gameId) && (!!playerId)
 console.log(`Launched application with gameId=${gameId}, playerId=${playerId}, isValid=${isValid}`);
 
 if (isValid) {
+    const iceUI = new IceUI(gameId, playerId)
+
     const telemetrySocket = new WebSocket(`${wsHost}/ui/game/${gameId}`);
     telemetrySocket.onopen = event => {
         console.log("Telemetry socket opened");
@@ -167,158 +357,46 @@ if (isValid) {
         console.log(message);
         if (message.playerId > 0 && message.playerId !== playerId) {
             console.log(`Ignoring message for other player`);
-            return;
+            return
         }
 
+        // noinspection JSUnreachableSwitchBranches
         switch (message.messageType) {
             case "Error":
                 console.log(`Error on Websocket: ${JSON.stringify(message)}`);
-                return;
+                return
             case "UpdateAdapterInfo":
-                console.log(`AdapterMessage: ${JSON.stringify(message)}`);
+                iceUI.onLoaded()
+                iceUI.setAdapterVersion(message.version)
+                iceUI.setAdapterProtocol('v' + message.protocolVersion)
+                iceUI.setPlayerId(message.playerId)
+                iceUI.setPlayerName(message.playerName)
+                iceUI.setGpgnetState(message.gpgnetState)
+                iceUI.setGameState(message.gameState)
+                iceUI.setCoturnHost(message.connectedHost)
 
-                document.body.classList.remove("loading")
-                document.body.classList.add("loaded")
-                setVariable("adapterVersion", message.version)
-                setVariable("adapterProtocol", 'v' + message.protocolVersion)
-                setVariable("playerId", message.playerId)
-                setVariable("playerName", message.playerName)
-                setVariable("gpgnetState", message.gpgnetState, value => {
-                    switch (value) {
-                        case "OFFLINE":
-                            return "danger";
-                        case "WAITING_FOR_GAME":
-                            return "warning";
-                        case "GAME_CONNECTED":
-                            return "success";
-                    }
-                })
-                setVariable("gameState", message.gameState, value => {
-                    switch (value) {
-                        case "NONE":
-                            return "danger";
-                        default:
-                            return "primary";
-                    }
-                })
-                setVariable("coturnHost", message.connectedHost == null ? "n/a" : message.connectedHost)
-                return;
+                return
             case "UpdateCoturnList":
+                iceUI.setCoturnServers(message.knownServers)
 
-                const coturnTable = document.getElementById("coturn-table")
-                const tbody = coturnTable.tBodies[0]
-
-                const rowsToDelete = tbody.rows.length; // keep the header!
-                for (let i = 0; i < rowsToDelete; i++) {
-                    coturnTable.deleteRow(-1)
-                }
-
-                if (message.knownServers) {
-                    for (let coturnServer of message.knownServers) {
-                        const newRow = tbody.insertRow()
-
-                        const regionCol = newRow.insertCell(-1)
-                        regionCol.innerHTML = coturnServer.region
-
-                        const hostCol = newRow.insertCell(-1)
-                        hostCol.innerHTML = coturnServer.host
-
-                        const portCol = newRow.insertCell(-1)
-                        portCol.innerHTML = coturnServer.port
-                        portCol.className = 'numeric'
-
-                        const averageRTTCol = newRow.insertCell(-1)
-                        averageRTTCol.innerHTML = coturnServer.averageRTT == null ? "n/a" : coturnServer.averageRTT
-                        averageRTTCol.className = 'numeric'
-                    }
-                }
-                return;
+                return
             case "UpdateGame":
                 if (message.gameState != undefined) {
-                    setVariable("gameState", message.gameState, value => {
-                        switch (value) {
-                            case "NONE":
-                                return "danger";
-                            default:
-                                return "primary";
-                        }
-                    })
+                    iceUI.setGameState(message.gameState)
                 }
-                const table = document.getElementById("connection-table")
-                table.innerHTML = ""; // delete all rows
 
                 if (message.participants == undefined) {
-                    return;
+                    return
                 }
 
-                const participantCount = message.participants.length
-                const participants = message.participants.map((p, index) => {
-                    return {
-                        rowIndex: index + 1, ...p
-                    }
-                })
-                const participantsIndexById = Object.fromEntries(participants.map(p => [p.playerId, p.index]))
+                iceUI.updateParticipants(message.participants)
 
-
-                // uniquely merge all participants and players in the connections (just id and name)
-                const players = [...new Map(
-                    message.participants.map(p => [p.playerId, {
-                        playerId: p.playerId,
-                        playerName: p.playerName,
-                    }]).concat(
-                        message.participants.flatMap(p => p.connections).map(c => [c.playerId, {
-                            playerId: c.playerId,
-                            playerName: c.playerName,
-                        }])
-                    )
-                ).values()]
-                    // and sort them by playerId
-                    .sort((p1,p2) => p1.playerId > p2.playerId)
-                    // and assign the column id
-                    .map((player, index) => ({
-                        columnIndex: index + 1, ...player
-                    }))
-
-                const columnOfPlayerId = Object.fromEntries(players.map(p => [p.playerId, p.columnIndex]))
-
-                const headerRow = table.insertRow(-1)
-                // One more column for the leading column
-                for (let i = 0; i <= players.length; i++) {
-                    const cell = headerRow.insertCell(-1);
-
-                    if(i > 0) {
-                        const p = players[i-1];
-                        headerRow.cells[p.columnIndex].innerHTML = p.playerName
-                    }
-                }
-
-                for (const p of participants) {
-                    if(p.playerId === playerId) {
-                        setVariable("coturnHost", p.connectedHost == null ? "n/a" : p.connectedHost)
-                    }
-
-                    const participantRow = table.insertRow(-1)
-                    // One more column for the leading column
-                    for (let i = 0; i <= players.length; i++) {
-                        const cell = participantRow.insertCell(-1);
-                        if(i > 0) {
-                            cell.innerHTML = players[i-1].playerId === p.playerId ? "self" : "n/a"
-                        }
-                    }
-
-                    participantRow.cells[0].innerHTML = p.playerName
-                    if (p.connections) {
-                        for (const con of p.connections) {
-                            const columnIndex = columnOfPlayerId[con.playerId]
-                            const cardHtml = buildConnectionCard(con.state, con.localCandidate, con.remoteCandidate, con.averageRTT, con.lastReceived)
-                            participantRow.cells[columnIndex].innerHTML = cardHtml
-                        }
-                    }
-                }
-                return;
+                return
+            case "GameConnectivityUpdate":
+                return
             default:
                 console.log(`Unmapped message type on Websocket: ${message.messageType}`)
-                return;
+                return
         }
 
 

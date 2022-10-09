@@ -3,6 +3,7 @@ package com.faforever.ice.telemetry.ui
 import com.faforever.ice.telemetry.domain.Game
 import com.faforever.ice.telemetry.domain.GpgnetState
 import com.faforever.ice.telemetry.domain.IceState
+import com.faforever.ice.telemetry.domain.PlayerId
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import org.ice4j.ice.CandidateType
 import java.time.Instant
@@ -49,11 +50,11 @@ data class UpdateGame(
                             it.localCandidate,
                             it.remoteCandidate,
                             it.averageRTT,
-                            it.lastReceived
+                            it.lastReceived,
                         )
-                    }
+                    },
                 )
-            }
+            },
         )
     }
 
@@ -76,18 +77,28 @@ data class PlayerConnection(
     val localCandidate: CandidateType?,
     val remoteCandidate: CandidateType?,
     val averageRTT: Double?,
-    val lastReceived: Instant?
+    val lastReceived: Instant?,
 )
 
 data class UpdateCoturnList(
     val playerId: Int,
     val connectedHost: String,
-    val knownServers: List<CoturnServer>
+    val knownServers: List<CoturnServer>,
 ) : OutgoingUiMessage {
     data class CoturnServer(
         val region: String,
         val host: String,
         val port: Int,
-        val averageRTT: Double?
+        val averageRTT: Double?,
+    )
+}
+
+data class GameConnectivityUpdate(
+    val connections: Map<Int, List<ConnectionState>>,
+) : OutgoingUiMessage {
+    data class ConnectionState(
+        val remotePlayerId: Int,
+        val averageRTT: Double?,
+        val lastReceived: Instant?,
     )
 }

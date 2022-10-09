@@ -10,6 +10,7 @@ import com.faforever.ice.telemetry.domain.Game
 import com.faforever.ice.telemetry.domain.GameId
 import com.faforever.ice.telemetry.domain.GameUpdated
 import com.faforever.ice.telemetry.domain.GpgnetState
+import com.faforever.ice.telemetry.domain.ScheduledConnectivityUpdate
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import io.micronaut.runtime.event.annotation.EventListener
@@ -133,6 +134,7 @@ class UiWebSocket(
                     )
                 )
             }
+
     @EventListener
     fun onEvent(event: AdapterInfoUpdated) =
         activeListeners.getOrDefault(event.gameId, emptyList())
@@ -172,6 +174,25 @@ class UiWebSocket(
                                 it.averageRTT
                             )
                         }
+                    )
+                )
+            }
+
+    @EventListener
+    fun onEvent(event: ScheduledConnectivityUpdate) =
+        activeListeners.getOrDefault(event.gameId, emptyList())
+            .forEach { session ->
+                session.sendV1(
+                    GameConnectivityUpdate(
+                        event.connectivityPerPlayer.map { (playerId, meta) ->
+                            playerId.id to meta.map { state ->
+                                GameConnectivityUpdate.ConnectionState(
+                                    state.remotePlayerId.id,
+                                    state.averageRTT,
+                                    state.lastReceived,
+                                )
+                            }
+                        }.toMap()
                     )
                 )
             }

@@ -34,14 +34,14 @@ data class CoturnServer(
     val region: String,
     val host: String,
     val port: Int,
-    val averageRTT: Double?
+    val averageRTT: Double?,
 )
 
 data class CoturnListUpdated(
     val gameId: GameId,
     val playerId: PlayerId,
     val connectedHost: String,
-    val knownServers: List<CoturnServer>
+    val knownServers: List<CoturnServer>,
 ) : DomainEvent
 
 data class GameStateUpdated(
@@ -61,7 +61,7 @@ data class PeerConnected(
     val playerId: PlayerId,
     val peerPlayerId: PlayerId,
     val peerPlayerName: String,
-    val localOffer: Boolean
+    val localOffer: Boolean,
 )
 
 data class PeerDisconnected(
@@ -84,5 +84,16 @@ data class PeerConnectivityUpdated(
     val playerId: PlayerId,
     val peerPlayerId: PlayerId,
     val averageRTT: Double?,
-    val lastReceived: Instant?
+    val lastReceived: Instant?,
 )
+
+data class ScheduledConnectivityUpdate(
+    val gameId: GameId,
+    val connectivityPerPlayer: Map<PlayerId, List<ConnectionState>>,
+) {
+    data class ConnectionState(
+        val remotePlayerId: PlayerId,
+        val averageRTT: Double?,
+        val lastReceived: Instant?,
+    )
+}
