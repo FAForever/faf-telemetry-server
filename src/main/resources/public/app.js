@@ -126,7 +126,7 @@ class IceUI {
         this.participants = participants
             .sort((p1, p2) => p1.playerId > p2.playerId)
             .map((p, index) => ({
-                    rowIndex: index + 2, ...p
+                    rowIndex: index + 3, ...p
                 })
             )
 
@@ -146,7 +146,7 @@ class IceUI {
             .sort((p1, p2) => p1.playerId > p2.playerId)
             // and assign the column id
             .map((player, index) => ({
-                columnIndex: index + 2, ...player
+                columnIndex: index + 1, ...player
             }))
 
         this.renderParticipantTable()
@@ -173,24 +173,35 @@ class IceUI {
         connectionsHeaderCell.style = "text-align: center;"
 
         const connectionHeaderRow = table.insertRow(-1)
-        connectionHeaderRow.id = "connectionHeaderRow"
-        connectionHeaderRow.className = "secondaryHeader"
+        connectionHeaderRow.classList.add("secondaryHeader", "centered")
 
-        // Two more columns for the leading columns
-        for (let i = 0; i < this.players.length + 2; i++) {
+        // One more column for the leading columns
+        for (let i = 0; i <= this.players.length; i++) {
             const cell = connectionHeaderRow.insertCell(-1);
 
-            if (i < 2) {
+            if (i === 0) {
                 cell.className = "bgWhite"
+                cell.colSpan = 2
             }
 
-            if (i >= 2) {
-                const p = this.players[i - 2];
+            if (i > 0) {
+                const p = this.players[i - 1];
                 connectionHeaderRow.cells[p.columnIndex].innerHTML = p.playerName
             }
         }
 
-        let first = true
+        // We need an invisible (= height 0) row that contains the primary rowspan column
+        const invisibleRow = table.insertRow(-1)
+        invisibleRow.className = "invisible"
+
+        const participantHeaderCell = invisibleRow.insertCell(-1)
+        participantHeaderCell.rowSpan = this.participants.length + 1
+        participantHeaderCell.innerHTML = "Telemetry Sender"
+        participantHeaderCell.classList.add("primaryHeader", "rotatedText", "centered")
+        const fillerCell = invisibleRow.insertCell(-1)
+        fillerCell.colSpan = this.players.length + 1
+
+
         for (const p of this.participants) {
             if (p.playerId === playerId) {
                 this.setVariable("coturnHost", p.connectedHost == null ? "n/a" : p.connectedHost)
@@ -198,37 +209,33 @@ class IceUI {
 
             const participantRow = table.insertRow(-1)
 
-            if (first) {
-                const participantHeaderCell = participantRow.insertCell(-1)
-                participantHeaderCell.id = "participantHeaderCell"
-                participantHeaderCell.rowSpan = this.participants.length
-                participantHeaderCell.innerHTML = "Telemetry Sender"
-                participantHeaderCell.classList.add("primaryHeader", "rotatedText", "centered")
-            }
-
             // One more column for the leading column
             for (let i = 0; i <= this.players.length; i++) {
                 const cell = participantRow.insertCell(-1);
 
-                if(i === 0) {
+                if (i === 0) {
                     cell.classList.add("secondaryHeader", "centered")
                 }
 
                 if (i > 0) {
-                    cell.innerHTML = this.players[i - 1].playerId === p.playerId ? "self" : "n/a"
+                    cell.className = "skewed"
+                    if (this.players[i - 1].playerId === p.playerId) {
+                        cell.innerHTML = "<span class='self shadow-small'>self</span>"
+                    } else {
+                        cell.innerHTML = "<span class='not-available shadow-small'>missing</span>"
+                    }
                 }
             }
 
-            participantRow.cells[first ? 1 : 0].innerHTML = p.playerName
+            participantRow.cells[0].innerHTML = p.playerName
             if (p.connections) {
                 for (const con of p.connections) {
                     const columnIndex = columnOfPlayerId[con.playerId]
                     const cardHtml = this.buildConnectionCard(con.state, con.localCandidate, con.remoteCandidate, con.averageRTT, con.lastReceived)
                     participantRow.cells[columnIndex].innerHTML = cardHtml
+                    participantRow.cells[columnIndex].className = ''
                 }
             }
-
-            first = false
         }
     }
 
@@ -286,29 +293,26 @@ class IceUI {
         iceState = iceState.toLowerCase().replace("_", " ")
 
         return `
-    <div>
-        <div style="text-align: center;
-                    font-size: var(--sl-font-size-small);
-                    font-family: var(--sl-font-sans);
-                    background-color: var(${iceStateColor});
-                    padding: 0 1ch;">
+    <div class="connection-card skewed centered">
+        <span class="shadow-small" style="background-color: var(${iceStateColor});
+                    padding: var(--sl-spacing-2x-small) 2ch;">
             ${iceState}
-        </div>
+        </span>
 
-        <div style="display: flex; align-items: center; justify-content: center">
+        <div class="center-flex">
             <sl-badge variant="primary">${formatCandidateType(localCandidateType)}</sl-badge>
             <sl-icon name="arrow-right"></sl-icon>
             <sl-badge variant="primary">${formatCandidateType(remoteCandidateType)}</sl-badge>
         </div>
 
-        <div style="display: flex; align-items: center; justify-content: center">
+        <div class="center-flex">
             <sl-tooltip content="Average roundtrip time (aka Ping)">
-                <sl-badge variant="${averageRttStyle}" pill style="font-size: var(--sl-font-size-2x-small)">
+                <sl-badge variant="${averageRttStyle}" pill>
                     <sl-icon name="arrow-repeat"></sl-icon> ${averageRTTText}
                 </sl-badge>
             </sl-tooltip>
             <sl-tooltip content="Last message received">
-                <sl-badge variant="${lastReceivedStyle}" pill style="font-size: var(--sl-font-size-2x-small)">
+                <sl-badge variant="${lastReceivedStyle}" pill>
                     <sl-icon name="envelope"></sl-icon> ${lastReceivedText}
                 </sl-badge>
             </sl-tooltip>

@@ -73,8 +73,12 @@ table {
 }
 
 table#connection-table td {
-    padding: 0;
+    padding: var(--sl-spacing-2x-small);
     border: none;
+}
+
+#connection-table tr.invisible td {
+    padding: 0;
 }
 
 table.zebra tbody tr:nth-child(even) {
@@ -169,4 +173,38 @@ sl-badge faf-var {
 
 .bgWhite {
     background-color: white;
+}
+
+.skewed {
+    text-align: center;
+    vertical-align: center;
+    transform: skew(20deg, -20deg);
+    margin: 1.5rem 0.5rem;
+}
+
+.shadow-small {
+    box-shadow: var(--sl-spacing-2x-small) var(--sl-spacing-2x-small) var(--sl-color-neutral-200);
+}
+
+.self {
+    color: var(--sl-color-neutral-0);
+    background-color: var(--sl-color-primary-500);
+    padding: var(--sl-spacing-2x-small) 2ch;
+    box-shadow: var(--sl-spacing-2x-small) var(--sl-spacing-2x-small) var(--sl-color-neutral-200);
+}
+
+.not-available {
+    color: var(--sl-color-neutral-0);
+    background-color: var(--sl-color-danger-500);
+    padding: var(--sl-spacing-2x-small) 2ch;
+}
+
+.center-flex {
+    display: flex;
+    align-items: center;
+    justify-content: center
+}
+
+.connection-card {
+    font-family: var(--sl-font-sans)
 }
