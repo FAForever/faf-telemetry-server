@@ -83,7 +83,7 @@ class IceUI {
     }
 
     setCoturnHost(value) {
-        this.coturnHost = value == null ? "n/a" : value
+        this.coturnHost = value ?? "n/a"
 
         this.setVariable("coturnHost", this.coturnHost)
     }
@@ -114,7 +114,7 @@ class IceUI {
                 portCol.className = 'numeric'
 
                 const averageRTTCol = newRow.insertCell(-1)
-                averageRTTCol.innerHTML = coturnServer.averageRTT == null ? "n/a" : coturnServer.averageRTT
+                averageRTTCol.innerHTML = coturnServer.averageRTT ?? "n/a"
                 averageRTTCol.className = 'numeric'
             }
         }
@@ -136,10 +136,12 @@ class IceUI {
                 playerId: p.playerId,
                 playerName: p.playerName,
             }]).concat(
-                this.participants.flatMap(p => p.connections).map(c => [c.playerId, {
-                    playerId: c.playerId,
-                    playerName: c.playerName,
-                }])
+                this.participants
+                    .flatMap(p => p.connections ?? [])
+                    .map(c => [c.playerId, {
+                        playerId: c.playerId,
+                        playerName: c.playerName,
+                    }])
             )
         ).values()]
             // and sort them by playerId
@@ -204,7 +206,7 @@ class IceUI {
 
         for (const p of this.participants) {
             if (p.playerId === playerId) {
-                this.setVariable("coturnHost", p.connectedHost == null ? "n/a" : p.connectedHost)
+                this.setVariable("coturnHost", p.connectedHost ?? "n/a")
             }
 
             const participantRow = table.insertRow(-1)
@@ -381,7 +383,7 @@ const params = new Proxy(new URLSearchParams(window.location.search), {
 
 const gameId = parseInt(params.gameId)
 const playerId = parseInt(params.playerId)
-let wsHost = params.wsHost != undefined ? params.wsHost : location.origin.replace(/^http/, 'ws')
+let wsHost = params.wsHost ?? location.origin.replace(/^http/, 'ws')
 const isValid = (!!gameId) && (!!playerId)
 
 console.log(`Launched application with gameId=${gameId}, playerId=${playerId}, isValid=${isValid}`);
