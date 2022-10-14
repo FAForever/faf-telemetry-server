@@ -3,7 +3,6 @@ package com.faforever.ice.telemetry.ui
 import com.faforever.ice.telemetry.domain.Game
 import com.faforever.ice.telemetry.domain.GpgnetState
 import com.faforever.ice.telemetry.domain.IceState
-import com.faforever.ice.telemetry.domain.PlayerId
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import org.ice4j.ice.CandidateType
 import java.time.Instant

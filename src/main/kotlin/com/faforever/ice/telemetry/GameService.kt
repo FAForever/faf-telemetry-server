@@ -21,7 +21,6 @@ import com.faforever.ice.telemetry.domain.PlayerConnection
 import com.faforever.ice.telemetry.domain.PlayerId
 import com.faforever.ice.telemetry.domain.PlayerMeta
 import com.faforever.ice.telemetry.domain.ScheduledConnectivityUpdate
-import com.faforever.ice.telemetry.ui.GameConnectivityUpdate
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.runtime.event.annotation.EventListener
@@ -31,7 +30,6 @@ import org.ice4j.ice.CandidateType
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.concurrent.fixedRateTimer
 
 @Singleton
 class GameService(
@@ -224,7 +222,7 @@ class GameService(
 
     @Scheduled(fixedRate = "1s")
     fun sendConnectivityUpdates() {
-        activeGames.values.forEach {game ->
+        activeGames.values.forEach { game ->
             val event = ScheduledConnectivityUpdate(
                 game.id,
                 game.participants.map { (playerId, meta) ->

@@ -126,7 +126,7 @@ class IceUI {
         this.participants = participants
             .sort((p1, p2) => p1.playerId > p2.playerId)
             .map((p, index) => ({
-                    rowIndex: index + 1, ...p
+                    rowIndex: index + 2, ...p
                 })
             )
 
@@ -146,7 +146,7 @@ class IceUI {
             .sort((p1, p2) => p1.playerId > p2.playerId)
             // and assign the column id
             .map((player, index) => ({
-                columnIndex: index + 1, ...player
+                columnIndex: index + 2, ...player
             }))
 
         this.renderParticipantTable()
@@ -158,32 +158,68 @@ class IceUI {
 
         const table = document.getElementById("connection-table")
         table.innerHTML = ""; // delete all rows
-        const headerRow = table.insertRow(-1)
-        // One more column for the leading column
-        for (let i = 0; i <= this.players.length; i++) {
-            const cell = headerRow.insertCell(-1);
 
-            if (i > 0) {
-                const p = this.players[i - 1];
-                headerRow.cells[p.columnIndex].innerHTML = p.playerName
+        const headerRow = table.insertRow(-1)
+        headerRow.id = "headerRow"
+        headerRow.className = "primaryHeader"
+
+        const emptyTopLeftCell = headerRow.insertCell(-1)
+        emptyTopLeftCell.colSpan = 2
+        emptyTopLeftCell.className = "bgWhite"
+        const connectionsHeaderCell = headerRow.insertCell(-1)
+        connectionsHeaderCell.id = "connectionsHeaderCell"
+        connectionsHeaderCell.colSpan = this.players.length
+        connectionsHeaderCell.innerHTML = "Connections"
+        connectionsHeaderCell.style = "text-align: center;"
+
+        const connectionHeaderRow = table.insertRow(-1)
+        connectionHeaderRow.id = "connectionHeaderRow"
+        connectionHeaderRow.className = "secondaryHeader"
+
+        // Two more columns for the leading columns
+        for (let i = 0; i < this.players.length + 2; i++) {
+            const cell = connectionHeaderRow.insertCell(-1);
+
+            if (i < 2) {
+                cell.className = "bgWhite"
+            }
+
+            if (i >= 2) {
+                const p = this.players[i - 2];
+                connectionHeaderRow.cells[p.columnIndex].innerHTML = p.playerName
             }
         }
 
+        let first = true
         for (const p of this.participants) {
             if (p.playerId === playerId) {
                 this.setVariable("coturnHost", p.connectedHost == null ? "n/a" : p.connectedHost)
             }
 
             const participantRow = table.insertRow(-1)
+
+            if (first) {
+                const participantHeaderCell = participantRow.insertCell(-1)
+                participantHeaderCell.id = "participantHeaderCell"
+                participantHeaderCell.rowSpan = this.participants.length
+                participantHeaderCell.innerHTML = "Telemetry Sender"
+                participantHeaderCell.classList.add("primaryHeader", "rotatedText", "centered")
+            }
+
             // One more column for the leading column
             for (let i = 0; i <= this.players.length; i++) {
                 const cell = participantRow.insertCell(-1);
+
+                if(i === 0) {
+                    cell.classList.add("secondaryHeader", "centered")
+                }
+
                 if (i > 0) {
                     cell.innerHTML = this.players[i - 1].playerId === p.playerId ? "self" : "n/a"
                 }
             }
 
-            participantRow.cells[0].innerHTML = p.playerName
+            participantRow.cells[first ? 1 : 0].innerHTML = p.playerName
             if (p.connections) {
                 for (const con of p.connections) {
                     const columnIndex = columnOfPlayerId[con.playerId]
@@ -191,6 +227,8 @@ class IceUI {
                     participantRow.cells[columnIndex].innerHTML = cardHtml
                 }
             }
+
+            first = false
         }
     }
 
@@ -202,13 +240,14 @@ class IceUI {
 
             if (lastReceived < 1) {
                 lastReceivedStyle = "success"
+                lastReceivedText = "<1s"
             } else if (lastReceived < 5) {
                 lastReceivedStyle = "warning"
+                lastReceivedText = "<5s"
             } else {
                 lastReceivedStyle = "danger"
+                lastReceivedText = ">5s"
             }
-
-            lastReceivedText = `<${lastReceived}s ago`
         }
 
         let averageRttStyle = "neutral"
