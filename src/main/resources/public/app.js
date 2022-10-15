@@ -242,38 +242,6 @@ class IceUI {
     }
 
     buildConnectionCard(iceState, localCandidateType, remoteCandidateType, averageRTT, lastReceived) {
-        let lastReceivedText = "n/a"
-        let lastReceivedStyle = "neutral"
-        if (lastReceived) {
-            lastReceived = Math.round(Date.now() - new Date(lastReceived) / 1000.0)
-
-            if (lastReceived < 1) {
-                lastReceivedStyle = "success"
-                lastReceivedText = "<1s"
-            } else if (lastReceived < 5) {
-                lastReceivedStyle = "warning"
-                lastReceivedText = "<5s"
-            } else {
-                lastReceivedStyle = "danger"
-                lastReceivedText = ">5s"
-            }
-        }
-
-        let averageRttStyle = "neutral"
-        let averageRTTText = "n/a"
-        if (averageRTT) {
-
-            if (averageRTT < 100) {
-                averageRttStyle = "success"
-            } else if (averageRTT < 500) {
-                averageRttStyle = "warning"
-            } else {
-                averageRttStyle = "danger"
-            }
-
-            averageRTTText = Math.round(averageRTT * 10) / 10.0 + "ms"
-        }
-
         let iceStateColor
 
         switch (iceState) {
@@ -308,19 +276,84 @@ class IceUI {
         </div>
 
         <div class="center-flex">
-            <sl-tooltip content="Average roundtrip time (aka Ping)">
-                <sl-badge variant="${averageRttStyle}" pill>
-                    <sl-icon name="arrow-repeat"></sl-icon> ${averageRTTText}
-                </sl-badge>
+            <sl-tooltip content="Average roundtrip time (aka Ping)" class="average-rtt">
+                ${this.buildAverageRTTBadge(averageRTT)}
             </sl-tooltip>
-            <sl-tooltip content="Last message received">
-                <sl-badge variant="${lastReceivedStyle}" pill>
-                    <sl-icon name="envelope"></sl-icon> ${lastReceivedText}
-                </sl-badge>
+            <sl-tooltip content="Last message received" class="last-received">
+                ${this.buildLastReceivedBadge(lastReceived)}
             </sl-tooltip>
         </div>
     </div>
 `
+    }
+
+    buildAverageRTTBadge(averageRTT) {
+        let averageRttStyle = "neutral"
+        let averageRTTText = "n/a"
+        if (averageRTT) {
+
+            if (averageRTT < 100) {
+                averageRttStyle = "success"
+            } else if (averageRTT < 500) {
+                averageRttStyle = "warning"
+            } else {
+                averageRttStyle = "danger"
+            }
+
+            averageRTTText = Math.round(averageRTT * 10) / 10.0 + "ms"
+        }
+
+        return `
+            <sl-badge variant="${averageRttStyle}" pill>
+                <sl-icon name="arrow-repeat"></sl-icon><span class="average-rtt">${averageRTTText}</span>
+            </sl-badge>
+        `
+    }
+
+    buildLastReceivedBadge(lastReceived) {
+        let lastReceivedText = "n/a"
+        let lastReceivedStyle = "neutral"
+        if (lastReceived) {
+            lastReceived = Math.round(Date.now() - new Date(lastReceived) / 1000.0)
+
+            if (lastReceived < 1) {
+                lastReceivedStyle = "success"
+                lastReceivedText = "<1s"
+            } else if (lastReceived < 5) {
+                lastReceivedStyle = "warning"
+                lastReceivedText = "<5s"
+            } else {
+                lastReceivedStyle = "danger"
+                lastReceivedText = ">5s"
+            }
+        }
+
+        return `
+            <sl-badge variant="${lastReceivedStyle}" pill>
+                <sl-icon name="envelope"></sl-icon> ${lastReceivedText}
+            </sl-badge>
+        `
+    }
+
+    updateConnectivities(connectionStatesByParticipant) {
+        const table = document.getElementById("connection-table")
+
+        for (const [participantId, stateList] of Object.entries(connectionStatesByParticipant)) {
+            const row = this.participants.filter(p => p.playerId === parseInt(participantId))[0].rowIndex
+
+            for (const state of stateList) {
+                const column = this.players.filter(p => p.playerId === state.remotePlayerId)[0].columnIndex
+
+                const cell = table.rows[row].cells[column]
+
+                if(cell == null) {
+                    continue
+                }
+
+                cell.querySelector('.average-rtt').innerHTML = this.buildAverageRTTBadge(state.averageRTT)
+                cell.querySelector('.last-received').innerHTML = this.buildLastReceivedBadge(state.lastReceived)
+            }
+        }
     }
 
 }
@@ -438,6 +471,7 @@ if (isValid) {
 
                 return
             case "GameConnectivityUpdate":
+                iceUI.updateConnectivities(message.connections)
                 return
             default:
                 console.log(`Unmapped message type on Websocket: ${message.messageType}`)
