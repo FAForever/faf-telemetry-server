@@ -314,7 +314,7 @@ class IceUI {
         let lastReceivedText = "n/a"
         let lastReceivedStyle = "neutral"
         if (lastReceived) {
-            lastReceived = Math.round(Date.now() - new Date(lastReceived) / 1000.0)
+            lastReceived = (Date.now() - new Date(lastReceived)) / 1000.0
 
             if (lastReceived < 1) {
                 lastReceivedStyle = "success"
