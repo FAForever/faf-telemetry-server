@@ -76,7 +76,7 @@ class AdapterServerWebSocket(
 
     @OnMessage
     fun onMessage(gameId: Int, playerId: Int, message: String, session: WebSocketSession) {
-        log.info("onMessage: $message")
+        log.debug("onMessage: $message")
 
         val gameId = GameId(gameId)
         val playerId = PlayerId(playerId)
