@@ -5,7 +5,7 @@ body {
 }
 
 #main {
-    max-width: 1000px;
+    max-width: fit-content;
     margin: 20px auto 20px auto;
 }
 
@@ -207,4 +207,9 @@ sl-badge faf-var {
 
 .connection-card {
     font-family: var(--sl-font-sans)
+}
+
+.details__body {
+    overflow-x: scroll;
+    overflow-y: hidden;
 }
