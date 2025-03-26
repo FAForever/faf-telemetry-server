@@ -21,25 +21,39 @@ import com.faforever.ice.telemetry.domain.PlayerConnection
 import com.faforever.ice.telemetry.domain.PlayerId
 import com.faforever.ice.telemetry.domain.PlayerMeta
 import com.faforever.ice.telemetry.domain.ScheduledConnectivityUpdate
+import io.micronaut.caffeine.cache.Caffeine
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Value
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.annotation.Scheduled
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Singleton
 import org.ice4j.ice.CandidateType
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.ConcurrentHashMap
 
 @Singleton
 class GameService(
     private val applicationContext: ApplicationContext,
     private val applicationEventPublisher: ApplicationEventPublisher<Any>,
+    @Value("\${game.cache.expiration-minutes}") private val cacheExpirationMinutes: Long,
+    @Value("\${game.cache.max-size}") private val cacheMaxSize: Long,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
-    private val activeGames: MutableMap<GameId, Game> = ConcurrentHashMap()
+    private val activeGames: MutableMap<GameId, Game> = Caffeine.newBuilder()
+        .expireAfterWrite(Duration.ofMinutes(cacheExpirationMinutes))
+        .maximumSize(cacheMaxSize)
+        .softValues()
+        .removalListener<GameId, Game> { key, game, cause ->
+            log.info("[ActiveGamesCache] Removed Game(id=$key, state=${game?.state}) due to: $cause")
+        }
+        .build<GameId, Game>().asMap()
 
-    init {
+
+    @PostConstruct
+    private fun afterInitialize() {
         if (applicationContext.environment.activeNames.contains("demo")) {
             log.info("Instantiating demo game 4711")
             activeGames[GameId(4711)] = Game(
