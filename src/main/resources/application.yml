@@ -14,3 +14,7 @@ netty:
 log:
   level:
     com.faforever: INFO
+game:
+  cache:
+    expiration-minutes: ${GAME_CACHE_EXPIRATION_MINUTES:240} # Default: 4 Hours
+    max-size: ${GAME_CACHE_MAX_SIZE:10000} # Default: 10_000 Games
