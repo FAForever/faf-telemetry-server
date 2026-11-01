@@ -3,12 +3,19 @@ package com.faforever.ice.telemetry.domain
 import com.faforever.ice.telemetry.adapter.protocol.v1.ProtocolVersion
 
 @JvmInline
-value class PlayerId(val id: Int)
+value class PlayerId(
+    val id: Int,
+)
 
 @JvmInline
-value class GameId(val id: Int)
+value class GameId(
+    val id: Int,
+)
 
-data class Player(val id: PlayerId, val name: String)
+data class Player(
+    val id: PlayerId,
+    val name: String,
+)
 
 data class PlayerMeta(
     val player: Player,
@@ -21,7 +28,7 @@ data class Game(
     val id: GameId,
     val host: PlayerId,
     val state: State,
-    val participants: MutableMap<PlayerId, PlayerMeta>
+    val participants: MutableMap<PlayerId, PlayerMeta>,
 ) {
     @Suppress("unused")
     enum class State {
@@ -29,7 +36,7 @@ data class Game(
         IDLE,
         LOBBY,
         LAUNCHING,
-        ENDED
+        ENDED,
     }
 }
 
@@ -45,5 +52,5 @@ data class Adapter(
 enum class GpgnetState {
     OFFLINE,
     WAITING_FOR_GAME,
-    GAME_CONNECTED
+    GAME_CONNECTED,
 }

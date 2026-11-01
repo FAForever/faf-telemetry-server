@@ -32,18 +32,23 @@ class UiWebSocket(
     private val activeListeners: MutableMap<GameId, MutableList<WebSocketSession>> = ConcurrentHashMap()
 
     @OnOpen
-    fun onOpen(gameId: String, session: WebSocketSession) {
+    fun onOpen(
+        gameId: String,
+        session: WebSocketSession,
+    ) {
         log.info("Ui Websocket opened session id $session.id [gameId=$gameId]")
 
-        val gameId = (
-            gameId.toIntOrNull() ?: return session.close(
-                CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
-            )
+        val gameId =
+            (
+                gameId.toIntOrNull() ?: return session.close(
+                    CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId"),
+                )
             ).let { GameId(it) }
 
-        activeListeners.getOrPut(gameId) {
-            Collections.synchronizedList(mutableListOf())
-        }.add(session)
+        activeListeners
+            .getOrPut(gameId) {
+                Collections.synchronizedList(mutableListOf())
+            }.add(session)
 
         val game = gameService.getGame(gameId) ?: return
         game.participants.values.forEach { playerConnection ->
@@ -57,7 +62,7 @@ class UiWebSocket(
                     null,
                     GpgnetState.OFFLINE,
                     Game.State.NONE,
-                )
+                ),
             )
 
             session.sendV1(
@@ -71,8 +76,8 @@ class UiWebSocket(
                             it.port,
                             it.averageRTT,
                         )
-                    }
-                )
+                    },
+                ),
             )
 
             val game = gameService.getGame(gameId) ?: return
@@ -81,19 +86,24 @@ class UiWebSocket(
     }
 
     @OnClose
-    fun onClose(gameId: String, session: WebSocketSession) {
+    fun onClose(
+        gameId: String,
+        session: WebSocketSession,
+    ) {
         log.info("Ui Websocket closed session id $session.id [gameId=$gameId]")
 
-        val gameId = (
-            gameId.toIntOrNull() ?: return session.close(
-                CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
-            )
+        val gameId =
+            (
+                gameId.toIntOrNull() ?: return session.close(
+                    CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId"),
+                )
             ).let { GameId(it) }
 
         activeListeners[gameId]?.remove(session)
 
-        val currentGameSessions = activeListeners[gameId]
-            ?: throw IllegalStateException("Game id $gameId not in game sessions")
+        val currentGameSessions =
+            activeListeners[gameId]
+                ?: throw IllegalStateException("Game id $gameId not in game sessions")
         currentGameSessions.remove(session)
         if (currentGameSessions.isEmpty()) {
             activeListeners.remove(gameId)
@@ -114,7 +124,8 @@ class UiWebSocket(
 
     @EventListener
     fun onEvent(event: AdapterConnected) =
-        activeListeners.getOrDefault(event.gameId, emptyList())
+        activeListeners
+            .getOrDefault(event.gameId, emptyList())
             .forEach { session ->
                 session.sendV1(
                     UpdateAdapterInfo(
@@ -126,13 +137,14 @@ class UiWebSocket(
                         null,
                         GpgnetState.OFFLINE,
                         Game.State.NONE,
-                    )
+                    ),
                 )
             }
 
     @EventListener
     fun onEvent(event: AdapterInfoUpdated) =
-        activeListeners.getOrDefault(event.gameId, emptyList())
+        activeListeners
+            .getOrDefault(event.gameId, emptyList())
             .forEach { session ->
                 session.sendV1(
                     UpdateAdapterInfo(
@@ -144,18 +156,20 @@ class UiWebSocket(
                         event.connectedHost,
                         event.gpgnetState,
                         event.gameState,
-                    )
+                    ),
                 )
             }
 
     @EventListener
     fun onEvent(event: GameUpdated) =
-        activeListeners.getOrDefault(event.game.id, emptyList())
+        activeListeners
+            .getOrDefault(event.game.id, emptyList())
             .forEach { it.sendV1(UpdateGame.fromGame(event.game)) }
 
     @EventListener
     fun onEvent(event: CoturnListUpdated) =
-        activeListeners.getOrDefault(event.gameId, emptyList())
+        activeListeners
+            .getOrDefault(event.gameId, emptyList())
             .forEach { session ->
                 session.sendV1(
                     UpdateCoturnList(
@@ -166,29 +180,32 @@ class UiWebSocket(
                                 it.region,
                                 it.host,
                                 it.port,
-                                it.averageRTT
+                                it.averageRTT,
                             )
-                        }
-                    )
+                        },
+                    ),
                 )
             }
 
     @EventListener
     fun onEvent(event: ScheduledConnectivityUpdate) =
-        activeListeners.getOrDefault(event.gameId, emptyList())
+        activeListeners
+            .getOrDefault(event.gameId, emptyList())
             .forEach { session ->
                 session.sendV1(
                     GameConnectivityUpdate(
-                        event.connectivityPerPlayer.map { (playerId, meta) ->
-                            playerId.id to meta.map { state ->
-                                GameConnectivityUpdate.ConnectionState(
-                                    state.remotePlayerId.id,
-                                    state.averageRTT,
-                                    state.lastReceived,
-                                )
-                            }
-                        }.toMap()
-                    )
+                        event.connectivityPerPlayer
+                            .map { (playerId, meta) ->
+                                playerId.id to
+                                    meta.map { state ->
+                                        GameConnectivityUpdate.ConnectionState(
+                                            state.remotePlayerId.id,
+                                            state.averageRTT,
+                                            state.lastReceived,
+                                        )
+                                    }
+                            }.toMap(),
+                    ),
                 )
             }
 }

@@ -42,53 +42,67 @@ class GameService(
     @Value("\${game.cache.max-size}") private val cacheMaxSize: Long,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
-    private val activeGames: MutableMap<GameId, Game> = Caffeine.newBuilder()
-        .expireAfterWrite(Duration.ofMinutes(cacheExpirationMinutes))
-        .maximumSize(cacheMaxSize)
-        .softValues()
-        .removalListener<GameId, Game> { key, game, cause ->
-            log.info("[ActiveGamesCache] Removed Game(id=$key, state=${game?.state}) due to: $cause")
-        }
-        .build<GameId, Game>().asMap()
-
+    private val activeGames: MutableMap<GameId, Game> =
+        Caffeine
+            .newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(cacheExpirationMinutes))
+            .maximumSize(cacheMaxSize)
+            .softValues()
+            .removalListener<GameId, Game> { key, game, cause ->
+                log.info("[ActiveGamesCache] Removed Game(id=$key, state=${game?.state}) due to: $cause")
+            }.build<GameId, Game>()
+            .asMap()
 
     @PostConstruct
     private fun afterInitialize() {
         if (applicationContext.environment.activeNames.contains("demo")) {
             log.info("Instantiating demo game 4711")
-            activeGames[GameId(4711)] = Game(
-                GameId(4711), PlayerId(5000), Game.State.LAUNCHING,
-                mutableMapOf(
-                    PlayerId(5000) to PlayerMeta(
-                        Player(PlayerId(5000), "Brutus5000"),
-                        Adapter(
-                            "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
-                        ),
-                        listOf(),
-                        listOf(
-                            PlayerConnection(Player(PlayerId(666), "RedDevil"), IceState.CHECKING),
-                            PlayerConnection(Player(PlayerId(667), "GreenDevil"), IceState.CHECKING),
-                        )
-                    ),
-                    PlayerId(666) to PlayerMeta(
-                        Player(PlayerId(666), "RedDevil"),
-                        Adapter(
-                            "0.1.0-SNAPSHOT", ProtocolVersion(1), "faforever.com", GpgnetState.OFFLINE, Game.State.NONE
-                        ),
-                        listOf(),
-                        listOf(
-                            PlayerConnection(
+            activeGames[GameId(4711)] =
+                Game(
+                    GameId(4711),
+                    PlayerId(5000),
+                    Game.State.LAUNCHING,
+                    mutableMapOf(
+                        PlayerId(5000) to
+                            PlayerMeta(
                                 Player(PlayerId(5000), "Brutus5000"),
-                                IceState.CONNECTED,
-                                CandidateType.LOCAL_CANDIDATE,
-                                CandidateType.RELAYED_CANDIDATE,
-                                47.11,
-                                Instant.now()
-                            )
-                        )
-                    )
+                                Adapter(
+                                    "0.1.0-SNAPSHOT",
+                                    ProtocolVersion(1),
+                                    "faforever.com",
+                                    GpgnetState.OFFLINE,
+                                    Game.State.NONE,
+                                ),
+                                listOf(),
+                                listOf(
+                                    PlayerConnection(Player(PlayerId(666), "RedDevil"), IceState.CHECKING),
+                                    PlayerConnection(Player(PlayerId(667), "GreenDevil"), IceState.CHECKING),
+                                ),
+                            ),
+                        PlayerId(666) to
+                            PlayerMeta(
+                                Player(PlayerId(666), "RedDevil"),
+                                Adapter(
+                                    "0.1.0-SNAPSHOT",
+                                    ProtocolVersion(1),
+                                    "faforever.com",
+                                    GpgnetState.OFFLINE,
+                                    Game.State.NONE,
+                                ),
+                                listOf(),
+                                listOf(
+                                    PlayerConnection(
+                                        Player(PlayerId(5000), "Brutus5000"),
+                                        IceState.CONNECTED,
+                                        CandidateType.LOCAL_CANDIDATE,
+                                        CandidateType.RELAYED_CANDIDATE,
+                                        47.11,
+                                        Instant.now(),
+                                    ),
+                                ),
+                            ),
+                    ),
                 )
-            )
         }
     }
 
@@ -99,19 +113,24 @@ class GameService(
         var game: Game? = activeGames[event.gameId]
 
         if (game == null) {
-            game = Game(
-                event.gameId, event.playerId, Game.State.LAUNCHING, mutableMapOf()
-            )
+            game =
+                Game(
+                    event.gameId,
+                    event.playerId,
+                    Game.State.LAUNCHING,
+                    mutableMapOf(),
+                )
 
             activeGames[event.gameId] = game
         }
 
-        game.participants[event.playerId] = PlayerMeta(
-            Player(event.playerId, event.playerName),
-            Adapter(event.adapterVersion, event.protocolVersion, null, GpgnetState.OFFLINE, Game.State.NONE),
-            emptyList(),
-            emptyList(),
-        )
+        game.participants[event.playerId] =
+            PlayerMeta(
+                Player(event.playerId, event.playerName),
+                Adapter(event.adapterVersion, event.protocolVersion, null, GpgnetState.OFFLINE, Game.State.NONE),
+                emptyList(),
+                emptyList(),
+            )
 
         applicationEventPublisher.publishEventAsync(GameUpdated(game))
     }
@@ -119,9 +138,10 @@ class GameService(
     @EventListener
     fun onEvent(event: GpgnetStateUpdated) {
         val game = activeGames[event.gameId] ?: return
-        val participant = game.participants[event.playerId]
-            ?.let { it.copy(adapter = it.adapter.copy(gpgnetState = event.newState)) }
-            ?: return
+        val participant =
+            game.participants[event.playerId]
+                ?.let { it.copy(adapter = it.adapter.copy(gpgnetState = event.newState)) }
+                ?: return
 
         game.participants[event.playerId] = participant
 
@@ -135,7 +155,7 @@ class GameService(
                 participant.adapter.connectedHost,
                 participant.adapter.gpgnetState,
                 participant.adapter.gameState,
-            )
+            ),
         )
     }
 
@@ -150,13 +170,17 @@ class GameService(
     fun onEvent(event: GameStateUpdated) {
         val game = activeGames[event.gameId] ?: return
         val participant = game.participants[event.playerId] ?: return
-        game.participants[event.playerId] = participant.copy(
-            adapter = participant.adapter.copy(gameState = event.newState)
-        )
+        game.participants[event.playerId] =
+            participant.copy(
+                adapter = participant.adapter.copy(gameState = event.newState),
+            )
 
-        val newGame = if (game.host == event.playerId) {
-            game.copy(state = event.newState)
-        } else game
+        val newGame =
+            if (game.host == event.playerId) {
+                game.copy(state = event.newState)
+            } else {
+                game
+            }
 
         activeGames[event.gameId] = newGame
 
@@ -168,9 +192,10 @@ class GameService(
         val game = activeGames[event.gameId] ?: return
         val participant = game.participants[event.playerId] ?: return
 
-        game.participants[event.playerId] = participant.copy(
-            connections = participant.connections + PlayerConnection(Player(event.peerPlayerId, event.peerPlayerName))
-        )
+        game.participants[event.playerId] =
+            participant.copy(
+                connections = participant.connections + PlayerConnection(Player(event.peerPlayerId, event.peerPlayerName)),
+            )
 
         applicationEventPublisher.publishEventAsync(GameUpdated(game))
     }
@@ -180,9 +205,10 @@ class GameService(
         val game = activeGames[event.gameId] ?: return
         val participant = game.participants[event.playerId] ?: return
 
-        game.participants[event.playerId] = participant.copy(
-            connections = participant.connections.filterNot { it.remotePlayer.id == event.peerPlayerId }
-        )
+        game.participants[event.playerId] =
+            participant.copy(
+                connections = participant.connections.filterNot { it.remotePlayer.id == event.peerPlayerId },
+            )
 
         applicationEventPublisher.publishEventAsync(GameUpdated(game))
     }
@@ -192,22 +218,24 @@ class GameService(
         val game = activeGames[event.gameId] ?: return
         val participant = game.participants[event.playerId] ?: return
 
-        val updatedConnections = participant.connections.map { connection ->
-            if (connection.remotePlayer.id != event.peerPlayerId) {
-                // keep the connection untouched
-                return@map connection
+        val updatedConnections =
+            participant.connections.map { connection ->
+                if (connection.remotePlayer.id != event.peerPlayerId) {
+                    // keep the connection untouched
+                    return@map connection
+                }
+
+                connection.copy(
+                    state = event.iceState,
+                    localCandidate = event.localCandidate,
+                    remoteCandidate = event.remoteCandidate,
+                )
             }
 
-            connection.copy(
-                state = event.iceState,
-                localCandidate = event.localCandidate,
-                remoteCandidate = event.remoteCandidate,
+        game.participants[event.playerId] =
+            participant.copy(
+                connections = updatedConnections,
             )
-        }
-
-        game.participants[event.playerId] = participant.copy(
-            connections = updatedConnections
-        )
 
         applicationEventPublisher.publishEventAsync(GameUpdated(game))
     }
@@ -217,38 +245,43 @@ class GameService(
         val game = activeGames[event.gameId] ?: return
         val participant = game.participants[event.playerId] ?: return
 
-        val updatedConnections = participant.connections.map { connection ->
-            if (connection.remotePlayer.id != event.peerPlayerId) {
-                // keep the connection untouched
-                return@map connection
+        val updatedConnections =
+            participant.connections.map { connection ->
+                if (connection.remotePlayer.id != event.peerPlayerId) {
+                    // keep the connection untouched
+                    return@map connection
+                }
+
+                connection.copy(
+                    averageRTT = event.averageRTT,
+                    lastReceived = event.lastReceived,
+                )
             }
 
-            connection.copy(
-                averageRTT = event.averageRTT,
-                lastReceived = event.lastReceived,
+        game.participants[event.playerId] =
+            participant.copy(
+                connections = updatedConnections,
             )
-        }
-
-        game.participants[event.playerId] = participant.copy(
-            connections = updatedConnections
-        )
     }
 
     @Scheduled(fixedRate = "1s")
     fun sendConnectivityUpdates() {
         activeGames.values.forEach { game ->
-            val event = ScheduledConnectivityUpdate(
-                game.id,
-                game.participants.map { (playerId, meta) ->
-                    playerId to meta.connections.map { con ->
-                        ScheduledConnectivityUpdate.ConnectionState(
-                            con.remotePlayer.id,
-                            con.averageRTT,
-                            con.lastReceived,
-                        )
-                    }
-                }.toMap()
-            )
+            val event =
+                ScheduledConnectivityUpdate(
+                    game.id,
+                    game.participants
+                        .map { (playerId, meta) ->
+                            playerId to
+                                meta.connections.map { con ->
+                                    ScheduledConnectivityUpdate.ConnectionState(
+                                        con.remotePlayer.id,
+                                        con.averageRTT,
+                                        con.lastReceived,
+                                    )
+                                }
+                        }.toMap(),
+                )
 
             applicationEventPublisher.publishEventAsync(event)
         }

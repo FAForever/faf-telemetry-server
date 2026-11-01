@@ -9,7 +9,7 @@ data class PlayerConnection(
     val localCandidate: CandidateType? = null,
     val remoteCandidate: CandidateType? = null,
     val averageRTT: Double? = null,
-    val lastReceived: Instant? = null
+    val lastReceived: Instant? = null,
 )
 
 @Suppress("unused")

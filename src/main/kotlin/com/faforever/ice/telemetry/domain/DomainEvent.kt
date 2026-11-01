@@ -28,7 +28,9 @@ data class AdapterInfoUpdated(
     val gameState: Game.State,
 ) : OutgoingUiMessage
 
-data class GameUpdated(val game: Game) : DomainEvent
+data class GameUpdated(
+    val game: Game,
+) : DomainEvent
 
 data class CoturnServer(
     val region: String,

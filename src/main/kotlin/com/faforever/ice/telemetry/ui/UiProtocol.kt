@@ -28,33 +28,34 @@ data class UpdateGame(
     val participants: List<PlayerMeta>,
 ) : OutgoingUiMessage {
     companion object {
-        fun fromGame(game: Game) = UpdateGame(
-            game.id.id,
-            game.host.id,
-            game.state,
-            game.participants.map { (_, meta) ->
-                PlayerMeta(
-                    meta.player.id.id,
-                    meta.player.name,
-                    meta.adapter.protocolVersion.id,
-                    meta.adapter.version,
-                    meta.adapter.connectedHost,
-                    meta.adapter.gpgnetState,
-                    meta.adapter.gameState,
-                    meta.connections.map {
-                        PlayerConnection(
-                            it.remotePlayer.id.id,
-                            it.remotePlayer.name,
-                            it.state,
-                            it.localCandidate,
-                            it.remoteCandidate,
-                            it.averageRTT,
-                            it.lastReceived,
-                        )
-                    },
-                )
-            },
-        )
+        fun fromGame(game: Game) =
+            UpdateGame(
+                game.id.id,
+                game.host.id,
+                game.state,
+                game.participants.map { (_, meta) ->
+                    PlayerMeta(
+                        meta.player.id.id,
+                        meta.player.name,
+                        meta.adapter.protocolVersion.id,
+                        meta.adapter.version,
+                        meta.adapter.connectedHost,
+                        meta.adapter.gpgnetState,
+                        meta.adapter.gameState,
+                        meta.connections.map {
+                            PlayerConnection(
+                                it.remotePlayer.id.id,
+                                it.remotePlayer.name,
+                                it.state,
+                                it.localCandidate,
+                                it.remoteCandidate,
+                                it.averageRTT,
+                                it.lastReceived,
+                            )
+                        },
+                    )
+                },
+            )
     }
 
     data class PlayerMeta(

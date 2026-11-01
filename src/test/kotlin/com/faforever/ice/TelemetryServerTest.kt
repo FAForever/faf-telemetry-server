@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test
 
 @MicronautTest
 class TelemetryServerTest {
-
     @Inject
     lateinit var application: EmbeddedApplication<*>
 
