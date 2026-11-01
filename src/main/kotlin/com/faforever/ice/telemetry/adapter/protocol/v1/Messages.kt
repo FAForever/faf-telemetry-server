@@ -37,7 +37,9 @@ interface OutgoingMessageV1 {
 /**
  * The minimal possible message to just extract the messageId
  */
-data class OnlyIdMessage(val messageId: String)
+data class OnlyIdMessage(
+    val messageId: String,
+)
 
 data class GeneralError(
     val errorCode: ErrorCode,
@@ -56,13 +58,13 @@ data class CoturnServer(
     val region: String,
     val host: String,
     val port: Int,
-    val averageRTT: Double?
+    val averageRTT: Double?,
 )
 
 data class UpdateCoturnList(
     override val messageId: UUID,
     val connectedHost: String,
-    val knownServers: List<CoturnServer>
+    val knownServers: List<CoturnServer>,
 ) : IncomingMessageV1
 
 data class UpdateGameState(
@@ -85,7 +87,7 @@ data class ConnectToPeer(
     override val messageId: UUID,
     val peerPlayerId: Int,
     val peerName: String,
-    val localOffer: Boolean
+    val localOffer: Boolean,
 ) : IncomingMessageV1
 
 data class DisconnectFromPeer(
@@ -106,5 +108,5 @@ data class UpdatePeerConnectivity(
     override val messageId: UUID,
     val peerPlayerId: Int,
     val averageRTT: Double?,
-    val lastReceived: Instant?
+    val lastReceived: Instant?,
 ) : IncomingMessageV1

@@ -25,48 +25,63 @@ import tools.jackson.databind.ObjectMapper
 import java.util.concurrent.ConcurrentHashMap
 
 @JvmInline
-value class SessionId(val id: String)
+value class SessionId(
+    val id: String,
+)
 
 @JvmInline
-value class ProtocolVersion(val id: Int)
+value class ProtocolVersion(
+    val id: Int,
+)
 
 @ServerWebSocket("/adapter/v1/game/{gameId}/player/{playerId}")
 class AdapterServerWebSocket(
     private val objectMapper: ObjectMapper,
-    private val applicationEventPublisher: ApplicationEventPublisher<Any>
+    private val applicationEventPublisher: ApplicationEventPublisher<Any>,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val gameSessions: MutableMap<GameId, MutableMap<PlayerId, WebSocketSession>> = ConcurrentHashMap()
 
     @OnOpen
-    fun onOpen(gameId: String, playerId: String, session: WebSocketSession) {
+    fun onOpen(
+        gameId: String,
+        playerId: String,
+        session: WebSocketSession,
+    ) {
         log.info("Websocket opened session id $session.id [protocol=v1,gameId=$gameId]")
 
-        val gameId = (
-            gameId.toIntOrNull() ?: return session.close(
-                CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
-            )
+        val gameId =
+            (
+                gameId.toIntOrNull() ?: return session.close(
+                    CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId"),
+                )
             ).let { GameId(it) }
 
-        val playerId = (
-            playerId.toIntOrNull() ?: return session.close(
-                CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId")
-            )
+        val playerId =
+            (
+                playerId.toIntOrNull() ?: return session.close(
+                    CloseReason(CloseReason.UNSUPPORTED_DATA.code, "Invalid gameId"),
+                )
             ).let { PlayerId(it) }
 
         gameSessions.getOrPut(gameId) { ConcurrentHashMap() }[playerId] = session
     }
 
     @OnClose
-    fun onClose(gameId: Int, playerId: Int, session: WebSocketSession) {
+    fun onClose(
+        gameId: Int,
+        playerId: Int,
+        session: WebSocketSession,
+    ) {
         log.info("Adapter websocket closed session id $session.id [protocol=v1,gameId=$gameId]")
 
         val gameId = GameId(gameId)
         val playerId = PlayerId(playerId)
 
-        val currentGameSessions = gameSessions[gameId]
-            ?: throw IllegalStateException("Game id $gameId not in game sessions")
+        val currentGameSessions =
+            gameSessions[gameId]
+                ?: throw IllegalStateException("Game id $gameId not in game sessions")
 
         currentGameSessions.remove(playerId)
         if (currentGameSessions.isEmpty()) {
@@ -75,7 +90,12 @@ class AdapterServerWebSocket(
     }
 
     @OnMessage
-    fun onMessage(gameId: Int, playerId: Int, message: String, session: WebSocketSession) {
+    fun onMessage(
+        gameId: Int,
+        playerId: Int,
+        message: String,
+        session: WebSocketSession,
+    ) {
         log.debug("onMessage: $message")
 
         val gameId = GameId(gameId)
@@ -92,7 +112,7 @@ class AdapterServerWebSocket(
                         playerId,
                         message.userName,
                         session.getSessionId(),
-                    )
+                    ),
                 )
             }
 
@@ -109,8 +129,8 @@ class AdapterServerWebSocket(
                                 it.port,
                                 it.averageRTT,
                             )
-                        }
-                    )
+                        },
+                    ),
                 )
             }
 
@@ -120,7 +140,7 @@ class AdapterServerWebSocket(
                         gameId,
                         playerId,
                         message.newState,
-                    )
+                    ),
                 )
             }
 
@@ -130,7 +150,7 @@ class AdapterServerWebSocket(
                         gameId,
                         playerId,
                         message.newState,
-                    )
+                    ),
                 )
             }
 
@@ -141,8 +161,8 @@ class AdapterServerWebSocket(
                         playerId,
                         PlayerId(message.peerPlayerId),
                         message.peerName,
-                        message.localOffer
-                    )
+                        message.localOffer,
+                    ),
                 )
             }
 
@@ -151,8 +171,8 @@ class AdapterServerWebSocket(
                     PeerDisconnected(
                         gameId,
                         playerId,
-                        PlayerId(message.peerPlayerId)
-                    )
+                        PlayerId(message.peerPlayerId),
+                    ),
                 )
             }
 
@@ -165,7 +185,7 @@ class AdapterServerWebSocket(
                         message.iceState,
                         message.localCandidate,
                         message.remoteCandidate,
-                    )
+                    ),
                 )
             }
 
@@ -177,13 +197,16 @@ class AdapterServerWebSocket(
                         PlayerId(message.peerPlayerId),
                         message.averageRTT,
                         message.lastReceived,
-                    )
+                    ),
                 )
             }
         }
     }
 
-    private fun parseMessageOrRespondError(message: String, session: WebSocketSession): IncomingMessageV1? =
+    private fun parseMessageOrRespondError(
+        message: String,
+        session: WebSocketSession,
+    ): IncomingMessageV1? =
         try {
             objectMapper.readValue(message, IncomingMessageV1::class.java)
         } catch (e: Exception) {
@@ -200,11 +223,12 @@ class AdapterServerWebSocket(
         sendSync(message)
     }
 
-    private fun tryParseMessageId(message: String): String? = try {
-        objectMapper.readValue(message, OnlyIdMessage::class.java).messageId
-    } catch (e: Exception) {
-        null
-    }
+    private fun tryParseMessageId(message: String): String? =
+        try {
+            objectMapper.readValue(message, OnlyIdMessage::class.java).messageId
+        } catch (e: Exception) {
+            null
+        }
 }
 
 fun WebSocketSession.getSessionId() = SessionId(id)
