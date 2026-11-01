@@ -21,7 +21,7 @@ import com.faforever.ice.telemetry.domain.PlayerConnection
 import com.faforever.ice.telemetry.domain.PlayerId
 import com.faforever.ice.telemetry.domain.PlayerMeta
 import com.faforever.ice.telemetry.domain.ScheduledConnectivityUpdate
-import io.micronaut.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.Caffeine
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Value
 import io.micronaut.context.event.ApplicationEventPublisher

@@ -13,7 +13,6 @@ import com.faforever.ice.telemetry.domain.PeerConnectivityUpdated
 import com.faforever.ice.telemetry.domain.PeerDisconnected
 import com.faforever.ice.telemetry.domain.PeerStateUpdated
 import com.faforever.ice.telemetry.domain.PlayerId
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.websocket.CloseReason
 import io.micronaut.websocket.WebSocketSession
@@ -22,6 +21,7 @@ import io.micronaut.websocket.annotation.OnMessage
 import io.micronaut.websocket.annotation.OnOpen
 import io.micronaut.websocket.annotation.ServerWebSocket
 import org.slf4j.LoggerFactory
+import tools.jackson.databind.ObjectMapper
 import java.util.concurrent.ConcurrentHashMap
 
 @JvmInline
