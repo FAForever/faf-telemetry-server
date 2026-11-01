@@ -11,6 +11,11 @@ netty:
   default:
     allocator:
       max-order: 3
+jackson:
+  # Jackson 3 defaults to toString() for enums; the v1 protocol and UI use enum names (e.g. HOST_CANDIDATE)
+  enum-features:
+    READ_ENUMS_USING_TO_STRING: false
+    WRITE_ENUMS_USING_TO_STRING: false
 log:
   level:
     com.faforever: INFO
