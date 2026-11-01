@@ -98,7 +98,8 @@ data class DisconnectFromPeer(
 data class UpdatePeerState(
     override val messageId: UUID,
     val peerPlayerId: Int,
-    val connected: Boolean,
+    // not sent by the adapter; Jackson 2 silently defaulted it to false
+    val connected: Boolean = false,
     val iceState: IceState,
     val localCandidate: CandidateType?,
     val remoteCandidate: CandidateType?,
