@@ -11,8 +11,6 @@ import com.faforever.ice.telemetry.domain.GameId
 import com.faforever.ice.telemetry.domain.GameUpdated
 import com.faforever.ice.telemetry.domain.GpgnetState
 import com.faforever.ice.telemetry.domain.ScheduledConnectivityUpdate
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.websocket.CloseReason
 import io.micronaut.websocket.WebSocketSession
@@ -21,6 +19,7 @@ import io.micronaut.websocket.annotation.OnMessage
 import io.micronaut.websocket.annotation.OnOpen
 import io.micronaut.websocket.annotation.ServerWebSocket
 import org.slf4j.LoggerFactory
+import tools.jackson.databind.ObjectMapper
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
@@ -31,10 +30,6 @@ class UiWebSocket(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private val activeListeners: MutableMap<GameId, MutableList<WebSocketSession>> = ConcurrentHashMap()
-
-    init {
-        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-    }
 
     @OnOpen
     fun onOpen(gameId: String, session: WebSocketSession) {

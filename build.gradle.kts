@@ -1,36 +1,38 @@
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    val kotlinVersion = "2.1.20"
+    val kotlinVersion = "2.4.10"
 
     id("org.jetbrains.kotlin.jvm") version kotlinVersion
-    id("org.jetbrains.kotlin.kapt") version kotlinVersion
     id("org.jetbrains.kotlin.plugin.allopen") version kotlinVersion
-    id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("io.micronaut.application") version "3.7.8"
-    id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
+    id("com.google.devtools.ksp") version "2.3.13"
+    id("com.gradleup.shadow") version "9.6.1"
+    id("io.micronaut.application") version "5.0.2"
+    id("io.micronaut.docker") version "5.0.2"
+    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
 }
 
 version = "0.1"
 group = "com.faforever.ice"
 
-val kotlinVersion = project.properties.get("kotlinVersion")
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    kapt("io.micronaut:micronaut-http-validation")
+    ksp("io.micronaut:micronaut-http-validation")
+    ksp("io.micronaut.validation:micronaut-validation-processor")
     implementation("io.micronaut:micronaut-websocket")
     implementation("io.micronaut:micronaut-jackson-databind")
     implementation("io.micronaut.kotlin:micronaut-kotlin-runtime")
+    implementation("io.micronaut.validation:micronaut-validation")
     implementation("jakarta.annotation:jakarta.annotation-api")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
+    implementation("com.github.ben-manes.caffeine:caffeine")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
     runtimeOnly("ch.qos.logback:logback-classic")
-    implementation("io.micronaut:micronaut-validation")
-
-    runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin")
+    runtimeOnly("tools.jackson.module:jackson-module-kotlin")
+    runtimeOnly("org.yaml:snakeyaml")
 }
 
 application {
@@ -38,28 +40,25 @@ application {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_25
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_25)
+        freeCompilerArgs.add("-Xjsr305=strict")
+    }
 }
 
 tasks {
-    compileKotlin {
-        kotlinOptions {
-            freeCompilerArgs = listOf("-Xjsr305=strict")
-            jvmTarget = "17"
-        }
-    }
-    compileTestKotlin {
-        kotlinOptions {
-            jvmTarget = "17"
-        }
-    }
-
     named<DockerBuildImage>("dockerBuild") {
         images.empty()
         images.add("faforever/faf-telemetry-server")
     }
 }
+
 graalvmNative.toolchainDetection.set(false)
+
 micronaut {
     runtime("netty")
     testRuntime("junit5")
